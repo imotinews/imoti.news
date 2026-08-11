@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ArticleStatus {
+  draft
+  published
+}
+
+enum SourceType {
+  rss
+  scrape
+}
+
+enum AdPosition {
+  header
+  sidebar
+  in_article
+  footer
+}
+
+enum AdminRole {
+  admin
+  editor
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String
+  slug     String    @unique
+  articles Article[]
+
+  @@map("categories")
+}
+
+model Source {
+  id       String     @id @default(cuid())
+  name     String
+  url      String
+  type     SourceType
+  active   Boolean    @default(true)
+  articles Article[]
+
+  @@map("sources")
+}
+
+model Article {
+  id                String        @id @default(cuid())
+  title             String
+  rewrittenContent  String        @map("rewritten_content")
+  originalUrl       String        @map("original_url")
+  sourceName        String        @map("source_name")
+  categoryId        String?       @map("category_id")
+  category          Category?     @relation(fields: [categoryId], references: [id])
+  sourceId          String?       @map("source_id")
+  source            Source?       @relation(fields: [sourceId], references: [id])
+  status            ArticleStatus @default(draft)
+  publishedAt       DateTime?     @map("published_at")
+  aiGenerated       Boolean       @default(false) @map("ai_generated")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  @@map("articles")
+}
+
+model NewsletterSubscriber {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  subscribedAt  DateTime @default(now()) @map("subscribed_at")
+  confirmed     Boolean  @default(false)
+
+  @@map("newsletter_subs")
+}
+
+model AdBanner {
+  id         String     @id @default(cuid())
+  name       String
+  imageUrl   String?    @map("image_url")
+  htmlCode   String?    @map("html_code")
+  targetUrl  String?    @map("target_url")
+  position   AdPosition
+  startDate  DateTime?  @map("start_date")
+  endDate    DateTime?  @map("end_date")
+  active     Boolean    @default(true)
+  impressions Int       @default(0)
+  clicks     Int        @default(0)
+
+  @@map("ad_banners")
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         AdminRole @default(admin)
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@map("admin_users")
+}
