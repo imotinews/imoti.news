@@ -1,0 +1,119 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { slugify } from "@/lib/slugify";
+
+async function requireAdmin() {
+  const session = await auth();
+  if (!session) {
+    throw new Error("Не сте влезли в системата.");
+  }
+}
+
+function parseContent(raw: string): string {
+  return raw
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
+function deriveExcerpt(content: string): string {
+  const firstParagraph = content.split("\n").find(Boolean) ?? "";
+  return firstParagraph.length > 200 ? `${firstParagraph.slice(0, 197)}...` : firstParagraph;
+}
+
+async function generateUniqueSlug(title: string): Promise<string> {
+  const base = slugify(title) || "novina";
+  let candidate = base;
+  let suffix = 2;
+
+  while (await prisma.article.findUnique({ where: { slug: candidate } })) {
+    candidate = `${base}-${suffix}`;
+    suffix += 1;
+  }
+
+  return candidate;
+}
+
+export async function createArticle(formData: FormData) {
+  await requireAdmin();
+
+  const title = String(formData.get("title") ?? "").trim();
+  const content = parseContent(String(formData.get("content") ?? ""));
+  const categoryId = String(formData.get("categoryId") ?? "") || null;
+  const sourceName = String(formData.get("sourceName") ?? "").trim();
+  const originalUrl = String(formData.get("originalUrl") ?? "").trim();
+  const status = formData.get("status") === "published" ? "published" : "draft";
+
+  if (!title || !content || !sourceName || !originalUrl) {
+    throw new Error("Моля, попълни всички задължителни полета.");
+  }
+
+  const slug = await generateUniqueSlug(title);
+
+  await prisma.article.create({
+    data: {
+      slug,
+      title,
+      excerpt: deriveExcerpt(content),
+      rewrittenContent: content,
+      sourceName,
+      originalUrl,
+      categoryId,
+      status,
+      aiGenerated: false,
+      publishedAt: status === "published" ? new Date() : null,
+    },
+  });
+
+  revalidatePath("/admin/articles");
+  revalidatePath("/");
+  redirect("/admin/articles");
+}
+
+export async function updateArticle(id: string, formData: FormData) {
+  await requireAdmin();
+
+  const title = String(formData.get("title") ?? "").trim();
+  const content = parseContent(String(formData.get("content") ?? ""));
+  const categoryId = String(formData.get("categoryId") ?? "") || null;
+  const sourceName = String(formData.get("sourceName") ?? "").trim();
+  const originalUrl = String(formData.get("originalUrl") ?? "").trim();
+  const status = formData.get("status") === "published" ? "published" : "draft";
+
+  if (!title || !content || !sourceName || !originalUrl) {
+    throw new Error("Моля, попълни всички задължителни полета.");
+  }
+
+  const existing = await prisma.article.findUnique({ where: { id } });
+
+  await prisma.article.update({
+    where: { id },
+    data: {
+      title,
+      excerpt: deriveExcerpt(content),
+      rewrittenContent: content,
+      sourceName,
+      originalUrl,
+      categoryId,
+      status,
+      publishedAt:
+        status === "published" ? (existing?.publishedAt ?? new Date()) : null,
+    },
+  });
+
+  revalidatePath("/admin/articles");
+  revalidatePath("/");
+  redirect("/admin/articles");
+}
+
+export async function deleteArticle(id: string) {
+  await requireAdmin();
+  await prisma.article.delete({ where: { id } });
+  revalidatePath("/admin/articles");
+  revalidatePath("/");
+}

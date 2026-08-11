@@ -1,6 +1,6 @@
 import Container from "@/components/layout/Container";
 import ArticleCard from "@/components/articles/ArticleCard";
-import { searchArticles } from "@/lib/mock-articles";
+import { searchPublished } from "@/lib/queries";
 
 export default async function SearchPage({
   searchParams,
@@ -8,7 +8,7 @@ export default async function SearchPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q = "" } = await searchParams;
-  const results = searchArticles(q);
+  const results = await searchPublished(q);
 
   return (
     <Container>

@@ -1,15 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Container from "@/components/layout/Container";
-import AdSlot from "@/components/ads/AdSlot";
-import { MOCK_ARTICLES, getArticleBySlug, getCategoryBySlug } from "@/lib/mock-articles";
+import AdSlotContainer from "@/components/ads/AdSlotContainer";
+import { getPublishedBySlug } from "@/lib/queries";
 
-export function generateStaticParams() {
-  return MOCK_ARTICLES.map((article) => ({ slug: article.slug }));
-}
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("bg-BG", {
+function formatDate(date: Date | null) {
+  if (!date) return "";
+  return new Date(date).toLocaleDateString("bg-BG", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -22,28 +19,26 @@ export default async function ArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  const article = await getPublishedBySlug(slug);
 
   if (!article) {
     notFound();
   }
 
-  const category = getCategoryBySlug(article.categorySlug);
-  const [firstHalf, secondHalf] = [
-    article.content.slice(0, Math.ceil(article.content.length / 2)),
-    article.content.slice(Math.ceil(article.content.length / 2)),
-  ];
+  const paragraphs = article.rewrittenContent.split("\n").filter(Boolean);
+  const firstHalf = paragraphs.slice(0, Math.ceil(paragraphs.length / 2));
+  const secondHalf = paragraphs.slice(Math.ceil(paragraphs.length / 2));
 
   return (
     <Container>
       <div className="grid gap-10 py-8 lg:grid-cols-[1fr_300px]">
         <article className="min-w-0">
-          {category && (
+          {article.category && (
             <Link
-              href={`/kategoriya/${category.slug}`}
+              href={`/kategoriya/${article.category.slug}`}
               className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
             >
-              {category.name}
+              {article.category.name}
             </Link>
           )}
 
@@ -64,7 +59,7 @@ export default async function ArticlePage({
           {secondHalf.length > 0 && (
             <>
               <div className="my-8">
-                <AdSlot position="in_article" />
+                <AdSlotContainer position="in_article" />
               </div>
               <div className="space-y-4 text-base leading-7 text-foreground">
                 {secondHalf.map((paragraph, i) => (
@@ -77,7 +72,7 @@ export default async function ArticlePage({
           <div className="mt-8 rounded-md border border-border bg-muted p-4 text-sm text-muted-foreground">
             Източник:{" "}
             <a
-              href={article.sourceUrl}
+              href={article.originalUrl}
               target="_blank"
               rel="noopener noreferrer nofollow"
               className="font-medium text-primary hover:underline"
@@ -89,7 +84,7 @@ export default async function ArticlePage({
 
         <aside className="hidden lg:block">
           <div className="sticky top-6">
-            <AdSlot position="sidebar" />
+            <AdSlotContainer position="sidebar" />
           </div>
         </aside>
       </div>

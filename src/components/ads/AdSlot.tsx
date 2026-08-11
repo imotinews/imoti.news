@@ -7,8 +7,43 @@ const POSITION_CONFIG = {
 
 export type AdPosition = keyof typeof POSITION_CONFIG;
 
-export default function AdSlot({ position }: { position: AdPosition }) {
+export type AdSlotAd = {
+  id: string;
+  imageUrl: string | null;
+  htmlCode: string | null;
+  targetUrl: string | null;
+  name: string;
+};
+
+export default function AdSlot({ position, ad }: { position: AdPosition; ad?: AdSlotAd | null }) {
   const { label, className } = POSITION_CONFIG[position];
+
+  if (ad?.htmlCode) {
+    return (
+      <div
+        className={`mx-auto overflow-hidden ${className}`}
+        dangerouslySetInnerHTML={{ __html: ad.htmlCode }}
+      />
+    );
+  }
+
+  if (ad?.imageUrl) {
+    const image = (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={ad.imageUrl} alt={ad.name} className="h-full w-full object-cover" />
+    );
+    return (
+      <div className={`mx-auto overflow-hidden rounded-md ${className}`}>
+        {ad.targetUrl ? (
+          <a href={ad.targetUrl} target="_blank" rel="noopener noreferrer nofollow">
+            {image}
+          </a>
+        ) : (
+          image
+        )}
+      </div>
+    );
+  }
 
   return (
     <div

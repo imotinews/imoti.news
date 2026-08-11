@@ -51,7 +51,9 @@ model Source {
 
 model Article {
   id                String        @id @default(cuid())
+  slug              String        @unique
   title             String
+  excerpt           String?
   rewrittenContent  String        @map("rewritten_content")
   originalUrl       String        @map("original_url")
   sourceName        String        @map("source_name")

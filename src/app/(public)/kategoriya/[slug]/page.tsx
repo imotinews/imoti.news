@@ -1,13 +1,11 @@
 import { notFound } from "next/navigation";
 import Container from "@/components/layout/Container";
 import ArticleCard from "@/components/articles/ArticleCard";
-import AdSlot from "@/components/ads/AdSlot";
+import AdSlotContainer from "@/components/ads/AdSlotContainer";
 import { CATEGORIES } from "@/lib/categories";
-import { getArticlesByCategory, getCategoryBySlug } from "@/lib/mock-articles";
+import { getPublishedByCategorySlug } from "@/lib/queries";
 
-export function generateStaticParams() {
-  return CATEGORIES.map((category) => ({ slug: category.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function CategoryPage({
   params,
@@ -15,13 +13,13 @@ export default async function CategoryPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const category = getCategoryBySlug(slug);
+  const category = CATEGORIES.find((c) => c.slug === slug);
 
   if (!category) {
     notFound();
   }
 
-  const articles = getArticlesByCategory(slug);
+  const articles = await getPublishedByCategorySlug(slug);
 
   return (
     <Container>
@@ -48,7 +46,7 @@ export default async function CategoryPage({
         )}
 
         <div className="mt-8">
-          <AdSlot position="in_article" />
+          <AdSlotContainer position="in_article" />
         </div>
       </div>
     </Container>
