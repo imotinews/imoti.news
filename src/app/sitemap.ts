@@ -3,6 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { CATEGORIES } from "@/lib/categories";
 import { siteUrl } from "@/lib/newsletter/resend-client";
 
+// Without this, Next.js treats /sitemap.xml as static and tries to query the
+// database at *build time* (a separate, more restricted environment than
+// runtime) — which is what broke the Vercel build. Forcing dynamic also means
+// the sitemap always reflects newly published articles instead of going
+// stale until the next deploy.
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const articles = await prisma.article.findMany({
     where: { status: "published" },
