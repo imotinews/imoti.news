@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import Container from "@/components/layout/Container";
 import AdSlotContainer from "@/components/ads/AdSlotContainer";
 import NewsletterForm from "@/components/layout/NewsletterForm";
 import { getPublishedBySlug } from "@/lib/queries";
+import { siteUrl } from "@/lib/newsletter/resend-client";
 
 function formatDate(date: Date | null) {
   if (!date) return "";
@@ -12,6 +14,41 @@ function formatDate(date: Date | null) {
     month: "long",
     year: "numeric",
   });
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const article = await getPublishedBySlug(slug);
+
+  if (!article) {
+    return { title: "Новината не е намерена" };
+  }
+
+  const description = article.excerpt ?? article.rewrittenContent.slice(0, 160);
+  const url = siteUrl(`/statia/${article.slug}`);
+
+  return {
+    title: article.title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "article",
+      title: article.title,
+      description,
+      url,
+      publishedTime: article.publishedAt?.toISOString(),
+      section: article.category?.name,
+    },
+    twitter: {
+      card: "summary",
+      title: article.title,
+      description,
+    },
+  };
 }
 
 export default async function ArticlePage({
@@ -30,8 +67,29 @@ export default async function ArticlePage({
   const firstHalf = paragraphs.slice(0, Math.ceil(paragraphs.length / 2));
   const secondHalf = paragraphs.slice(Math.ceil(paragraphs.length / 2));
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: article.title,
+    description: article.excerpt ?? undefined,
+    datePublished: article.publishedAt?.toISOString(),
+    dateModified: article.updatedAt.toISOString(),
+    articleSection: article.category?.name,
+    mainEntityOfPage: siteUrl(`/statia/${article.slug}`),
+    publisher: {
+      "@type": "Organization",
+      name: "imoti.news",
+    },
+    isBasedOn: article.originalUrl,
+  };
+
   return (
     <Container>
+      {/* eslint-disable-next-line react/no-danger */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="grid gap-10 py-8 lg:grid-cols-[1fr_300px]">
         <article className="min-w-0">
           {article.category && (

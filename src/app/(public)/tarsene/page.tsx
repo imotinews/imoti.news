@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Container from "@/components/layout/Container";
 import ArticleCard from "@/components/articles/ArticleCard";
 import { searchPublished } from "@/lib/queries";
+
+export const metadata: Metadata = {
+  title: "Търсене",
+  robots: { index: false, follow: true },
+};
 
 export default async function SearchPage({
   searchParams,

@@ -1,6 +1,12 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import Container from "@/components/layout/Container";
 import { confirmSubscription } from "@/lib/actions/newsletter";
+
+export const metadata: Metadata = {
+  title: "Потвърждение на абонамент",
+  robots: { index: false, follow: false },
+};
 
 export default async function ConfirmPage({
   searchParams,

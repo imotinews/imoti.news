@@ -1,11 +1,33 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import Container from "@/components/layout/Container";
 import ArticleCard from "@/components/articles/ArticleCard";
 import AdSlotContainer from "@/components/ads/AdSlotContainer";
 import { CATEGORIES } from "@/lib/categories";
 import { getPublishedByCategorySlug } from "@/lib/queries";
+import { siteUrl } from "@/lib/newsletter/resend-client";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const category = CATEGORIES.find((c) => c.slug === slug);
+
+  if (!category) {
+    return { title: "Категорията не е намерена" };
+  }
+
+  return {
+    title: category.name,
+    description: `Последни новини в категория ${category.name} — imoti.news.`,
+    alternates: { canonical: siteUrl(`/kategoriya/${category.slug}`) },
+    openGraph: { title: category.name, type: "website" },
+  };
+}
 
 export default async function CategoryPage({
   params,

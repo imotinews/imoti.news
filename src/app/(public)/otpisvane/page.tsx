@@ -1,6 +1,12 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import Container from "@/components/layout/Container";
 import { unsubscribe } from "@/lib/actions/newsletter";
+
+export const metadata: Metadata = {
+  title: "Отписване от бюлетина",
+  robots: { index: false, follow: false },
+};
 
 export default async function UnsubscribePage({
   searchParams,
