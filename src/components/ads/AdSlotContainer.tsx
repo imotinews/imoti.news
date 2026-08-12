@@ -14,5 +14,12 @@ export default async function AdSlotContainer({ position }: { position: AdPositi
     orderBy: { id: "asc" },
   });
 
+  if (ad) {
+    await prisma.adBanner.update({
+      where: { id: ad.id },
+      data: { impressions: { increment: 1 } },
+    });
+  }
+
   return <AdSlot position={position} ad={ad} />;
 }

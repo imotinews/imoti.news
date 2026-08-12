@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Container from "@/components/layout/Container";
 import AdSlotContainer from "@/components/ads/AdSlotContainer";
+import NewsletterForm from "@/components/layout/NewsletterForm";
 import { getPublishedBySlug } from "@/lib/queries";
 
 function formatDate(date: Date | null) {
@@ -60,6 +61,17 @@ export default async function ArticlePage({
             <>
               <div className="my-8">
                 <AdSlotContainer position="in_article" />
+              </div>
+              <div className="my-8 rounded-lg border border-border bg-muted p-5">
+                <p className="text-sm font-semibold text-foreground">
+                  Абонирай се за бюлетина на imoti.news
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Топ новините за имоти всяка седмица в твоята пощенска кутия.
+                </p>
+                <div className="mt-3">
+                  <NewsletterForm />
+                </div>
               </div>
               <div className="space-y-4 text-base leading-7 text-foreground">
                 {secondHalf.map((paragraph, i) => (

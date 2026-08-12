@@ -92,7 +92,7 @@ export default function AdForm({
         <label htmlFor="htmlCode" className="mb-1 block text-sm font-medium text-foreground">
           Или HTML код на рекламата{" "}
           <span className="font-normal text-muted-foreground">
-            (напр. код от Google Ad Manager, вместо изображение)
+            (напр. код от Google AdSense/Ad Manager, вместо изображение)
           </span>
         </label>
         <textarea

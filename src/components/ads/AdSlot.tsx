@@ -35,7 +35,7 @@ export default function AdSlot({ position, ad }: { position: AdPosition; ad?: Ad
     return (
       <div className={`mx-auto overflow-hidden rounded-md ${className}`}>
         {ad.targetUrl ? (
-          <a href={ad.targetUrl} target="_blank" rel="noopener noreferrer nofollow">
+          <a href={`/api/ads/click/${ad.id}`} target="_blank" rel="noopener noreferrer nofollow">
             {image}
           </a>
         ) : (

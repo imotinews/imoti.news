@@ -79,12 +79,22 @@ model ScrapedUrl {
 }
 
 model NewsletterSubscriber {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  subscribedAt  DateTime @default(now()) @map("subscribed_at")
-  confirmed     Boolean  @default(false)
+  id           String   @id @default(cuid())
+  email        String   @unique
+  subscribedAt DateTime @default(now()) @map("subscribed_at")
+  confirmed    Boolean  @default(false)
+  token        String   @unique @default(cuid())
 
   @@map("newsletter_subs")
+}
+
+model NewsletterSend {
+  id             String   @id @default(cuid())
+  subject        String
+  recipientCount Int      @map("recipient_count")
+  sentAt         DateTime @default(now()) @map("sent_at")
+
+  @@map("newsletter_sends")
 }
 
 model AdBanner {
