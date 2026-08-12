@@ -70,6 +70,14 @@ model Article {
   @@map("articles")
 }
 
+model ScrapedUrl {
+  id        String   @id @default(cuid())
+  url       String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("scraped_urls")
+}
+
 model NewsletterSubscriber {
   id            String   @id @default(cuid())
   email         String   @unique

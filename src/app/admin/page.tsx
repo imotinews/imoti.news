@@ -57,6 +57,12 @@ export default async function AdminDashboardPage() {
         >
           + Нова реклама
         </Link>
+        <Link
+          href="/admin/sources"
+          className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary"
+        >
+          Управление на източници
+        </Link>
       </div>
     </div>
   );

@@ -70,14 +70,14 @@ export default async function ArticlePage({
           )}
 
           <div className="mt-8 rounded-md border border-border bg-muted p-4 text-sm text-muted-foreground">
-            Източник:{" "}
+            Източник: {article.sourceName} —{" "}
             <a
               href={article.originalUrl}
               target="_blank"
               rel="noopener noreferrer nofollow"
-              className="font-medium text-primary hover:underline"
+              className="font-medium text-primary hover:underline break-all"
             >
-              {article.sourceName}
+              {article.originalUrl}
             </a>
           </div>
         </article>
