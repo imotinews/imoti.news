@@ -9,6 +9,6 @@ export const resend = new Resend(process.env.RESEND_API_KEY || "re_not_configure
 export const FROM_EMAIL = process.env.NEWSLETTER_FROM_EMAIL ?? "imoti.news <onboarding@resend.dev>";
 
 export function siteUrl(path: string): string {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001";
+  const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3001";
   return `${base}${path}`;
 }
