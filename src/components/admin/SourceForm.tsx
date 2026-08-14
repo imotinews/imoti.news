@@ -2,6 +2,7 @@ export type SourceFormValues = {
   name: string;
   url: string;
   type: "rss" | "scrape";
+  contentType: "real_estate" | "lifestyle";
   active: boolean;
 };
 
@@ -54,6 +55,21 @@ export default function SourceForm({
         >
           <option value="rss">RSS фийд</option>
           <option value="scrape">Страница със списък (scrape)</option>
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="contentType" className="mb-1 block text-sm font-medium text-foreground">
+          Съдържание
+        </label>
+        <select
+          id="contentType"
+          name="contentType"
+          defaultValue={defaultValues?.contentType ?? "real_estate"}
+          className="w-full max-w-xs rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+        >
+          <option value="real_estate">Пазар на имоти (строг филтър за релевантност)</option>
+          <option value="lifestyle">Съвети и дизайн (интериор, обзавеждане, дом)</option>
         </select>
       </div>
 

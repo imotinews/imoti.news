@@ -17,6 +17,18 @@ enum SourceType {
   scrape
 }
 
+enum SourceContentType {
+  real_estate
+  lifestyle
+}
+
+enum ScrapeStatus {
+  created
+  irrelevant
+  similar_duplicate
+  error
+}
+
 enum AdPosition {
   header
   sidebar
@@ -39,12 +51,14 @@ model Category {
 }
 
 model Source {
-  id       String     @id @default(cuid())
-  name     String
-  url      String
-  type     SourceType
-  active   Boolean    @default(true)
-  articles Article[]
+  id          String            @id @default(cuid())
+  name        String
+  url         String
+  type        SourceType
+  contentType SourceContentType @default(real_estate) @map("content_type")
+  active      Boolean           @default(true)
+  articles    Article[]
+  scrapedUrls ScrapedUrl[]
 
   @@map("sources")
 }
@@ -74,10 +88,17 @@ model Article {
 }
 
 model ScrapedUrl {
-  id        String   @id @default(cuid())
-  url       String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
+  id           String       @id @default(cuid())
+  url          String       @unique
+  status       ScrapeStatus @default(created)
+  title        String?
+  errorMessage String?      @map("error_message")
+  sourceId     String?      @map("source_id")
+  source       Source?      @relation(fields: [sourceId], references: [id])
+  articleId    String?      @map("article_id")
+  createdAt    DateTime     @default(now()) @map("created_at")
 
+  @@index([sourceId, createdAt])
   @@map("scraped_urls")
 }
 

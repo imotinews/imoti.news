@@ -3,13 +3,63 @@ import { prisma } from "@/lib/prisma";
 import { deleteSource } from "@/lib/actions/sources";
 import { runScraperNow } from "@/lib/actions/scraper";
 
+const STATS_WINDOW_DAYS = 3;
+
+const STATUS_LABEL: Record<string, string> = {
+  created: "нова статия",
+  irrelevant: "нерелевантно",
+  similar_duplicate: "прилича на друга",
+  error: "грешка",
+};
+
+const STATUS_CLASS: Record<string, string> = {
+  created: "bg-primary/10 text-primary",
+  irrelevant: "bg-muted text-muted-foreground",
+  similar_duplicate: "bg-muted text-muted-foreground",
+  error: "bg-red-100 text-red-700",
+};
+
 export default async function AdminSourcesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ran?: string; created?: string; irrelevant?: string; duplicates?: string; errors?: string }>;
+  searchParams: Promise<{
+    ran?: string;
+    created?: string;
+    irrelevant?: string;
+    duplicates?: string;
+    similar?: string;
+    errors?: string;
+  }>;
 }) {
   const params = await searchParams;
   const sources = await prisma.source.findMany({ orderBy: { name: "asc" } });
+
+  const windowStart = new Date(Date.now() - STATS_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const sourceIds = sources.map((s) => s.id);
+
+  const [statCounts, lastAttempts] = await Promise.all([
+    prisma.scrapedUrl.groupBy({
+      by: ["sourceId", "status"],
+      where: { sourceId: { in: sourceIds }, createdAt: { gte: windowStart } },
+      _count: true,
+    }),
+    prisma.scrapedUrl.findMany({
+      where: { sourceId: { in: sourceIds } },
+      orderBy: { createdAt: "desc" },
+      distinct: ["sourceId"],
+      select: { sourceId: true, createdAt: true, status: true, errorMessage: true },
+    }),
+  ]);
+
+  const statsBySource = new Map<string, Record<string, number>>();
+  for (const row of statCounts) {
+    if (!row.sourceId) continue;
+    const current = statsBySource.get(row.sourceId) ?? {};
+    current[row.status] = row._count;
+    statsBySource.set(row.sourceId, current);
+  }
+
+  const lastAttemptBySource = new Map(lastAttempts.map((a) => [a.sourceId, a]));
 
   return (
     <div>
@@ -36,7 +86,8 @@ export default async function AdminSourcesPage({
       {params.ran === "1" && (
         <div className="mt-4 rounded-md border border-border bg-muted p-4 text-sm text-foreground">
           Готово: <strong>{params.created}</strong> нови чернови, {params.irrelevant} нерелевантни
-          пропуснати, {params.duplicates} вече видени, {params.errors} грешки.{" "}
+          пропуснати, {params.duplicates} вече видени, {params.similar ?? 0} подобни на съществуващи,{" "}
+          {params.errors} грешки.{" "}
           <Link href="/admin/articles?status=draft" className="text-primary hover:underline">
             Виж чернови →
           </Link>
@@ -49,6 +100,7 @@ export default async function AdminSourcesPage({
             <tr>
               <th className="px-4 py-3 font-medium">Име</th>
               <th className="px-4 py-3 font-medium">Тип</th>
+              <th className="px-4 py-3 font-medium">Последен опит</th>
               <th className="px-4 py-3 font-medium">Активен</th>
               <th className="px-4 py-3 font-medium"></th>
             </tr>
@@ -56,12 +108,16 @@ export default async function AdminSourcesPage({
           <tbody>
             {sources.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
                   Няма добавени източници.
                 </td>
               </tr>
             )}
-            {sources.map((source) => (
+            {sources.map((source) => {
+              const lastAttempt = lastAttemptBySource.get(source.id);
+              const stats = statsBySource.get(source.id) ?? {};
+
+              return (
               <tr key={source.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3 text-foreground">
                   {source.name}
@@ -69,6 +125,30 @@ export default async function AdminSourcesPage({
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
                   {source.type === "rss" ? "RSS" : "Scrape"}
+                  {source.contentType === "lifestyle" && (
+                    <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs">lifestyle</span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  {lastAttempt ? (
+                    <div>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[lastAttempt.status] ?? "bg-muted text-muted-foreground"}`}
+                        title={lastAttempt.errorMessage ?? undefined}
+                      >
+                        {STATUS_LABEL[lastAttempt.status] ?? lastAttempt.status}
+                      </span>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {lastAttempt.createdAt.toLocaleString("bg-BG")}
+                        {" · последни "}
+                        {STATS_WINDOW_DAYS}
+                        {"дни: "}
+                        {stats.created ?? 0} нови, {stats.error ?? 0} грешки
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Няма опити още</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <span
@@ -102,7 +182,8 @@ export default async function AdminSourcesPage({
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

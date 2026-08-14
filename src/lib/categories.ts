@@ -10,4 +10,5 @@ export const CATEGORIES: Category[] = [
   { slug: "regulatsii-zakoni", name: "Регулации/Закони" },
   { slug: "investitsii", name: "Инвестиции" },
   { slug: "mezhdunarodni-pazari", name: "Международни пазари" },
+  { slug: "saveti-dizain", name: "Съвети и дизайн" },
 ];

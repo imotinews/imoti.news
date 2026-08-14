@@ -1,4 +1,5 @@
 import Parser from "rss-parser";
+import { waitForDomainSlot } from "./fetch-with-timeout";
 import type { FeedItem } from "./types";
 
 // Some feeds (e.g. vestnikstroitel.bg) skip the standard <link> tag entirely
@@ -16,6 +17,7 @@ const parser: Parser<object, CustomItem> = new Parser({
 });
 
 export async function fetchRssItems(feedUrl: string, limit = 10): Promise<FeedItem[]> {
+  await waitForDomainSlot(feedUrl);
   const feed = await parser.parseURL(feedUrl);
 
   return (feed.items ?? [])

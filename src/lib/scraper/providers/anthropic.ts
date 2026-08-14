@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import {
   SYSTEM_PROMPT,
+  LIFESTYLE_SYSTEM_PROMPT,
   CLASSIFICATION_SCHEMA,
   buildUserPrompt,
   toClassifyResult,
@@ -20,11 +21,12 @@ export async function classifyAndRewriteWithAnthropic(input: {
   title: string;
   text: string;
   sourceName: string;
+  contentType?: "real_estate" | "lifestyle";
 }): Promise<ClassifyResult> {
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 2000,
-    system: SYSTEM_PROMPT,
+    system: input.contentType === "lifestyle" ? LIFESTYLE_SYSTEM_PROMPT : SYSTEM_PROMPT,
     tools: [tool],
     tool_choice: { type: "tool", name: "submit_classification" },
     messages: [{ role: "user", content: buildUserPrompt(input) }],

@@ -16,11 +16,12 @@ export async function runScraperNow() {
   const created = results.reduce((sum, r) => sum + r.created, 0);
   const irrelevant = results.reduce((sum, r) => sum + r.skippedIrrelevant, 0);
   const duplicates = results.reduce((sum, r) => sum + r.skippedDuplicate, 0);
+  const similar = results.reduce((sum, r) => sum + r.skippedSimilar, 0);
   const errors = results.reduce((sum, r) => sum + r.errors.length, 0);
 
   revalidatePath("/admin/sources");
   revalidatePath("/admin/articles");
   redirect(
-    `/admin/sources?ran=1&created=${created}&irrelevant=${irrelevant}&duplicates=${duplicates}&errors=${errors}`
+    `/admin/sources?ran=1&created=${created}&irrelevant=${irrelevant}&duplicates=${duplicates}&similar=${similar}&errors=${errors}`
   );
 }

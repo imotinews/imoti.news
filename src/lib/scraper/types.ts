@@ -27,5 +27,6 @@ export type ScraperRunResult = {
   created: number;
   skippedIrrelevant: number;
   skippedDuplicate: number;
+  skippedSimilar: number;
   errors: string[];
 };

@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import {
   SYSTEM_PROMPT,
+  LIFESTYLE_SYSTEM_PROMPT,
   CLASSIFICATION_SCHEMA,
   buildUserPrompt,
   toClassifyResult,
@@ -14,12 +15,13 @@ export async function classifyAndRewriteWithGemini(input: {
   title: string;
   text: string;
   sourceName: string;
+  contentType?: "real_estate" | "lifestyle";
 }): Promise<ClassifyResult> {
   const response = await client.models.generateContent({
     model: "gemini-3.5-flash-lite",
     contents: buildUserPrompt(input),
     config: {
-      systemInstruction: SYSTEM_PROMPT,
+      systemInstruction: input.contentType === "lifestyle" ? LIFESTYLE_SYSTEM_PROMPT : SYSTEM_PROMPT,
       responseMimeType: "application/json",
       responseSchema: CLASSIFICATION_SCHEMA,
     },
