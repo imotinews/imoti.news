@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { auth, signOut } from "@/auth";
+import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -12,6 +13,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!session) {
     return <div className="min-h-screen bg-muted">{children}</div>;
   }
+
+  const draftCount = await prisma.article.count({ where: { status: "draft" } });
 
   return (
     <div className="min-h-screen bg-muted">
@@ -25,8 +28,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <Link href="/admin" className="text-foreground/80 hover:text-primary">
                 Табло
               </Link>
-              <Link href="/admin/articles" className="text-foreground/80 hover:text-primary">
+              <Link
+                href="/admin/articles?status=draft"
+                className="flex items-center gap-1.5 text-foreground/80 hover:text-primary"
+              >
                 Новини
+                {draftCount > 0 && (
+                  <span className="rounded-full bg-accent px-1.5 py-0.5 text-xs font-semibold leading-none text-white">
+                    {draftCount}
+                  </span>
+                )}
               </Link>
               <Link href="/admin/reklami" className="text-foreground/80 hover:text-primary">
                 Реклами

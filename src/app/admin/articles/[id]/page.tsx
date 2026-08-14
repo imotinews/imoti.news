@@ -1,0 +1,154 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { publishArticle, unpublishArticle } from "@/lib/actions/articles";
+
+export default async function ArticlePreviewPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const article = await prisma.article.findUnique({
+    where: { id },
+    include: { category: true },
+  });
+
+  if (!article) {
+    notFound();
+  }
+
+  const paragraphs = article.rewrittenContent.split("\n").filter(Boolean);
+
+  return (
+    <div>
+      <Link href="/admin/articles" className="text-sm text-muted-foreground hover:text-primary">
+        ← Обратно към новини
+      </Link>
+
+      <div className="mt-3 flex flex-col gap-6 lg:flex-row">
+        <article className="min-w-0 flex-1 rounded-lg border border-border bg-background p-6">
+          <span
+            className={
+              article.status === "published"
+                ? "rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+                : "rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+            }
+          >
+            {article.status === "published" ? "Публикувана" : "Чернова"}
+          </span>
+
+          <h1 className="mt-3 text-2xl font-bold tracking-tight text-foreground">
+            {article.title}
+          </h1>
+
+          {article.excerpt && (
+            <p className="mt-2 text-base text-muted-foreground">{article.excerpt}</p>
+          )}
+
+          <div className="mt-6 space-y-4 text-sm leading-relaxed text-foreground">
+            {paragraphs.map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
+            ))}
+          </div>
+        </article>
+
+        <aside className="w-full shrink-0 lg:w-72">
+          <div className="rounded-lg border border-border bg-background p-4">
+            <h2 className="text-sm font-semibold text-foreground">Действия</h2>
+
+            <div className="mt-3 flex flex-col gap-2">
+              {article.status === "published" ? (
+                <form
+                  action={async () => {
+                    "use server";
+                    await unpublishArticle(article.id);
+                  }}
+                >
+                  <button
+                    type="submit"
+                    className="w-full rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                  >
+                    Върни в чернова
+                  </button>
+                </form>
+              ) : (
+                <form
+                  action={async () => {
+                    "use server";
+                    await publishArticle(article.id);
+                  }}
+                >
+                  <button
+                    type="submit"
+                    className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:opacity-90"
+                  >
+                    Публикувай сега
+                  </button>
+                </form>
+              )}
+
+              <Link
+                href={`/admin/articles/${article.id}/edit`}
+                className="w-full rounded-md border border-border px-4 py-2 text-center text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                Редактирай
+              </Link>
+
+              {article.status === "published" && (
+                <Link
+                  href={`/statia/${article.slug}`}
+                  target="_blank"
+                  className="w-full rounded-md border border-border px-4 py-2 text-center text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  Виж на живо ↗
+                </Link>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-lg border border-border bg-background p-4 text-sm">
+            <h2 className="text-sm font-semibold text-foreground">Детайли</h2>
+            <dl className="mt-3 space-y-2">
+              <div>
+                <dt className="text-xs text-muted-foreground">Източник</dt>
+                <dd className="text-foreground">{article.sourceName}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Оригинал</dt>
+                <dd className="truncate">
+                  <a
+                    href={article.originalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    {article.originalUrl}
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Категория</dt>
+                <dd className="text-foreground">{article.category?.name ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">AI генерирана</dt>
+                <dd className="text-foreground">{article.aiGenerated ? "Да" : "Не"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Създадена</dt>
+                <dd className="text-foreground">{article.createdAt.toLocaleString("bg-BG")}</dd>
+              </div>
+              {article.publishedAt && (
+                <div>
+                  <dt className="text-xs text-muted-foreground">Публикувана</dt>
+                  <dd className="text-foreground">{article.publishedAt.toLocaleString("bg-BG")}</dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}

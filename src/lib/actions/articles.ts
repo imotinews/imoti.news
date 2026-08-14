@@ -93,6 +93,33 @@ export async function updateArticle(id: string, formData: FormData) {
   redirect("/admin/articles");
 }
 
+export async function publishArticle(id: string) {
+  await requireAdmin();
+
+  const article = await prisma.article.update({
+    where: { id },
+    data: { status: "published", publishedAt: new Date() },
+  });
+
+  revalidatePath("/admin/articles");
+  revalidatePath(`/admin/articles/${id}`);
+  revalidatePath("/");
+  revalidatePath(`/statia/${article.slug}`);
+}
+
+export async function unpublishArticle(id: string) {
+  await requireAdmin();
+
+  await prisma.article.update({
+    where: { id },
+    data: { status: "draft" },
+  });
+
+  revalidatePath("/admin/articles");
+  revalidatePath(`/admin/articles/${id}`);
+  revalidatePath("/");
+}
+
 export async function deleteArticle(id: string) {
   await requireAdmin();
   await prisma.article.delete({ where: { id } });

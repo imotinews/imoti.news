@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { deleteArticle } from "@/lib/actions/articles";
+import { deleteArticle, publishArticle, unpublishArticle } from "@/lib/actions/articles";
 
 export default async function AdminArticlesPage({
   searchParams,
@@ -54,22 +54,39 @@ export default async function AdminArticlesPage({
           <thead className="border-b border-border text-muted-foreground">
             <tr>
               <th className="px-4 py-3 font-medium">Заглавие</th>
+              <th className="px-4 py-3 font-medium">Източник</th>
               <th className="px-4 py-3 font-medium">Категория</th>
               <th className="px-4 py-3 font-medium">Статус</th>
+              <th className="px-4 py-3 font-medium">Създадена</th>
               <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
           <tbody>
             {articles.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
                   Няма новини.
                 </td>
               </tr>
             )}
             {articles.map((article) => (
               <tr key={article.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3 text-foreground">{article.title}</td>
+                <td className="max-w-xs px-4 py-3 text-foreground">
+                  <Link href={`/admin/articles/${article.id}`} className="hover:text-primary hover:underline">
+                    {article.title}
+                  </Link>
+                  {article.excerpt && (
+                    <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                      {article.excerpt}
+                    </div>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {article.sourceName}
+                  {article.aiGenerated && (
+                    <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs">AI</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-muted-foreground">
                   {article.category?.name ?? "—"}
                 </td>
@@ -84,8 +101,37 @@ export default async function AdminArticlesPage({
                     {article.status === "published" ? "Публикувана" : "Чернова"}
                   </span>
                 </td>
+                <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">
+                  {article.createdAt.toLocaleDateString("bg-BG")}
+                </td>
                 <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-3">
+                  <div className="flex items-center justify-end gap-3">
+                    {article.status === "published" ? (
+                      <form
+                        action={async () => {
+                          "use server";
+                          await unpublishArticle(article.id);
+                        }}
+                      >
+                        <button type="submit" className="text-muted-foreground hover:underline">
+                          Върни в чернова
+                        </button>
+                      </form>
+                    ) : (
+                      <form
+                        action={async () => {
+                          "use server";
+                          await publishArticle(article.id);
+                        }}
+                      >
+                        <button
+                          type="submit"
+                          className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:opacity-90"
+                        >
+                          Публикувай
+                        </button>
+                      </form>
+                    )}
                     <Link
                       href={`/admin/articles/${article.id}/edit`}
                       className="text-primary hover:underline"
