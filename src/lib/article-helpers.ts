@@ -6,6 +6,13 @@ export function deriveExcerpt(content: string): string {
   return firstParagraph.length > 200 ? `${firstParagraph.slice(0, 197)}...` : firstParagraph;
 }
 
+const WORDS_PER_MINUTE = 200;
+
+export function estimateReadMinutes(content: string): number {
+  const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(wordCount / WORDS_PER_MINUTE));
+}
+
 export async function generateUniqueSlug(title: string): Promise<string> {
   const base = slugify(title) || "novina";
   let candidate = base;

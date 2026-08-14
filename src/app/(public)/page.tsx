@@ -1,13 +1,64 @@
-import Link from "next/link";
 import Container from "@/components/layout/Container";
-import ArticleCard from "@/components/articles/ArticleCard";
-import AdSlotContainer from "@/components/ads/AdSlotContainer";
+import HeroSection from "@/components/home/HeroSection";
+import MarketWatch from "@/components/home/MarketWatch";
+import ArticleGrid from "@/components/home/ArticleGrid";
+import OriginalsSection from "@/components/home/OriginalsSection";
+import NewsletterBlock from "@/components/home/NewsletterBlock";
 import { getLatestPublished } from "@/lib/queries";
+import { estimateReadMinutes } from "@/lib/article-helpers";
+import type { ArticleCardData } from "@/components/articles/ArticleCard";
 
 export const dynamic = "force-dynamic";
 
+// "From around the world" has no real backing data yet -- there is no
+// per-city tagging in the schema, and no international-city articles.
+// Placeholder cards until that content exists; each links to "/" rather
+// than a fabricated slug.
+const WORLD_PLACEHOLDER: (ArticleCardData & { href: string })[] = [
+  {
+    slug: "london",
+    href: "/",
+    title: "Луксозни проекти в центъра на града",
+    excerpt: null,
+    imageUrl: null,
+    publishedAt: null,
+    category: { name: "London", slug: "london" },
+    readMinutes: 4,
+  },
+  {
+    slug: "dubai",
+    href: "/",
+    title: "Дубай остава магнит за инвеститори",
+    excerpt: null,
+    imageUrl: null,
+    publishedAt: null,
+    category: { name: "Dubai", slug: "dubai" },
+    readMinutes: 3,
+  },
+  {
+    slug: "new-york",
+    href: "/",
+    title: "Офис пазарът се възстановява",
+    excerpt: null,
+    imageUrl: null,
+    publishedAt: null,
+    category: { name: "New York", slug: "new-york" },
+    readMinutes: 4,
+  },
+  {
+    slug: "singapore",
+    href: "/",
+    title: "Устойчивите сгради — бъдещето е тук",
+    excerpt: null,
+    imageUrl: null,
+    publishedAt: null,
+    category: { name: "Singapore", slug: "singapore" },
+    readMinutes: 4,
+  },
+];
+
 export default async function Home() {
-  const latest = await getLatestPublished(10);
+  const latest = await getLatestPublished(12);
 
   if (latest.length === 0) {
     return (
@@ -19,47 +70,35 @@ export default async function Home() {
     );
   }
 
-  const [lead, ...rest] = latest;
+  const withReadMinutes: ArticleCardData[] = latest.map((article) => ({
+    ...article,
+    readMinutes: estimateReadMinutes(article.rewrittenContent),
+  }));
+
+  const [lead, ...rest] = withReadMinutes;
+  const sideArticles = rest.slice(0, 3);
+  const gridArticles = rest.slice(3, 7);
 
   return (
-    <Container>
-      <div className="py-8">
-        {lead.category && (
-          <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            {lead.category.name}
-          </span>
-        )}
-        <Link href={`/statia/${lead.slug}`} className="group block">
-          <h1 className="mt-3 max-w-3xl text-3xl font-bold tracking-tight text-foreground transition-colors group-hover:text-primary sm:text-4xl">
-            {lead.title}
-          </h1>
-          {lead.excerpt && (
-            <p className="mt-3 max-w-2xl text-base text-muted-foreground">{lead.excerpt}</p>
-          )}
-        </Link>
-      </div>
+    <>
+      <HeroSection lead={lead} sideArticles={sideArticles} />
 
-      <div className="border-t border-border py-8">
-        <h2 className="text-lg font-semibold text-foreground">Последни новини</h2>
+      <MarketWatch />
 
-        <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {rest.slice(0, 3).map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </div>
+      {gridArticles.length > 0 && (
+        <ArticleGrid title="Днес в имотите" viewAllHref="/kategoriya/pazar-na-imoti" articles={gridArticles} />
+      )}
 
-        {rest.length > 3 && (
-          <div className="my-8">
-            <AdSlotContainer position="in_article" />
-          </div>
-        )}
+      <ArticleGrid
+        title="From around the world"
+        viewAllHref="/kategoriya/mezhdunarodni-pazari"
+        articles={WORLD_PLACEHOLDER}
+        showPagination
+      />
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {rest.slice(3).map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </div>
-      </div>
-    </Container>
+      <OriginalsSection />
+
+      <NewsletterBlock />
+    </>
   );
 }

@@ -6,9 +6,9 @@
   --muted: #f4f4f5;
   --muted-foreground: #6b7280;
   --border: #e4e4e7;
-  --primary: #1e3a5f;
+  --primary: #1a3326;
   --primary-foreground: #ffffff;
-  --accent: #b45309;
+  --accent: #1a3326;
 }
 
 @theme inline {
@@ -30,9 +30,9 @@
     --muted: #18181b;
     --muted-foreground: #a1a1aa;
     --border: #27272a;
-    --primary: #3b6ea5;
+    --primary: #3a6b4f;
     --primary-foreground: #ffffff;
-    --accent: #d97706;
+    --accent: #3a6b4f;
   }
 }
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Container from "@/components/layout/Container";
 import ArticleCard from "@/components/articles/ArticleCard";
 import { searchPublished } from "@/lib/queries";
+import { estimateReadMinutes } from "@/lib/article-helpers";
 
 export const metadata: Metadata = {
   title: "Търсене",
@@ -61,7 +62,10 @@ export default async function SearchPage({
             </p>
             <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {results.map((article) => (
-                <ArticleCard key={article.id} article={article} />
+                <ArticleCard
+                  key={article.id}
+                  article={{ ...article, readMinutes: estimateReadMinutes(article.rewrittenContent) }}
+                />
               ))}
             </div>
           </>

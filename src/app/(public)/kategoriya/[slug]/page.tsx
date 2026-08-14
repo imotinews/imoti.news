@@ -6,6 +6,7 @@ import AdSlotContainer from "@/components/ads/AdSlotContainer";
 import { CATEGORIES } from "@/lib/categories";
 import { getPublishedByCategorySlug } from "@/lib/queries";
 import { siteUrl } from "@/lib/newsletter/resend-client";
+import { estimateReadMinutes } from "@/lib/article-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,10 @@ export default async function CategoryPage({
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {articles.map((article) => (
-              <ArticleCard key={article.id} article={article} />
+              <ArticleCard
+                key={article.id}
+                article={{ ...article, readMinutes: estimateReadMinutes(article.rewrittenContent) }}
+              />
             ))}
           </div>
         )}

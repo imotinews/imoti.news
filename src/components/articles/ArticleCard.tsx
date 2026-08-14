@@ -1,38 +1,42 @@
 import Link from "next/link";
+import ArticleImage from "./ArticleImage";
 
 export type ArticleCardData = {
   slug: string;
   title: string;
   excerpt: string | null;
+  imageUrl: string | null;
   publishedAt: Date | null;
   category: { name: string; slug: string } | null;
+  readMinutes: number;
 };
 
-function formatDate(date: Date | null) {
-  if (!date) return "";
-  return new Date(date).toLocaleDateString("bg-BG", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-export default function ArticleCard({ article }: { article: ArticleCardData }) {
+export default function ArticleCard({
+  article,
+  href,
+}: {
+  article: ArticleCardData;
+  href?: string;
+}) {
   return (
-    <Link
-      href={`/statia/${article.slug}`}
-      className="flex flex-col rounded-lg border border-border p-4 transition-colors hover:border-primary"
-    >
+    <Link href={href ?? `/statia/${article.slug}`} className="group flex flex-col">
+      <div className="aspect-[4/3] w-full overflow-hidden rounded-md">
+        <ArticleImage
+          src={article.imageUrl}
+          alt={article.title}
+          className="transition-opacity group-hover:opacity-80"
+        />
+      </div>
+
       {article.category && (
-        <span className="text-xs font-medium text-primary">{article.category.name}</span>
+        <span className="mt-3 text-xs font-semibold uppercase tracking-wide text-primary">
+          {article.category.name}
+        </span>
       )}
-      <h3 className="mt-2 text-base font-semibold text-foreground">{article.title}</h3>
-      {article.excerpt && (
-        <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{article.excerpt}</p>
-      )}
-      <span className="mt-3 text-xs text-muted-foreground">
-        {formatDate(article.publishedAt)}
-      </span>
+      <h3 className="mt-1.5 text-base font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
+        {article.title}
+      </h3>
+      <span className="mt-2 text-xs text-muted-foreground">{article.readMinutes} min read</span>
     </Link>
   );
 }
