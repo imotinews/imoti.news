@@ -1,19 +1,30 @@
+import Image from "next/image";
+
 // Shared fallback for articles without a featured image yet (all of them,
-// until the admin-triggered AI image generation from DESIGN.md ships).
+// until an image is uploaded/generated/extracted via the admin panel).
 // Keeps the same aspect ratio as a real photo so grids stay aligned.
 
 export default function ArticleImage({
   src,
   alt,
+  sizes = "(min-width: 1024px) 25vw, 50vw",
   className = "",
 }: {
   src: string | null;
   alt: string;
+  sizes?: string;
   className?: string;
 }) {
   if (src) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={alt} className={`h-full w-full object-cover ${className}`} />;
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes={sizes}
+        className={`object-cover ${className}`}
+      />
+    );
   }
 
   return (

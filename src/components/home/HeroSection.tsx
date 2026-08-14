@@ -43,8 +43,8 @@ export default function HeroSection({
           </div>
 
           <Link href={`/statia/${lead.slug}`} className="block overflow-hidden rounded-lg">
-            <div className="aspect-[4/3] w-full lg:aspect-auto lg:h-full">
-              <ArticleImage src={lead.imageUrl} alt={lead.title} />
+            <div className="relative aspect-[4/3] w-full lg:aspect-auto lg:h-full">
+              <ArticleImage src={lead.imageUrl} alt={lead.title} sizes="(min-width: 1024px) 45vw, 100vw" />
             </div>
           </Link>
 
@@ -68,8 +68,8 @@ export default function HeroSection({
                     {article.readMinutes} min read
                   </span>
                 </div>
-                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md">
-                  <ArticleImage src={article.imageUrl} alt={article.title} />
+                <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
+                  <ArticleImage src={article.imageUrl} alt={article.title} sizes="64px" />
                 </div>
               </Link>
             ))}

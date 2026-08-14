@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { publishArticle, unpublishArticle } from "@/lib/actions/articles";
+import ArticleImagePanel from "@/components/admin/ArticleImagePanel";
 
 export default async function ArticlePreviewPage({
   params,
@@ -105,6 +106,10 @@ export default async function ArticlePreviewPage({
                 </Link>
               )}
             </div>
+          </div>
+
+          <div className="mt-4">
+            <ArticleImagePanel articleId={article.id} imageUrl={article.imageUrl} />
           </div>
 
           <div className="mt-4 rounded-lg border border-border bg-background p-4 text-sm">

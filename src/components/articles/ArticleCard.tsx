@@ -20,7 +20,7 @@ export default function ArticleCard({
 }) {
   return (
     <Link href={href ?? `/statia/${article.slug}`} className="group flex flex-col">
-      <div className="aspect-[4/3] w-full overflow-hidden rounded-md">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-md">
         <ArticleImage
           src={article.imageUrl}
           alt={article.title}

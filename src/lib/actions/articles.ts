@@ -5,6 +5,13 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { deriveExcerpt, generateUniqueSlug } from "@/lib/article-helpers";
+import {
+  uploadImage,
+  deleteImage,
+  fetchImageFromUrl,
+  generateImageWithAI,
+  ImageGenQuotaError,
+} from "@/lib/images/store";
 
 async function requireAdmin() {
   const session = await auth();
@@ -114,6 +121,115 @@ export async function unpublishArticle(id: string) {
     where: { id },
     data: { status: "draft" },
   });
+
+  revalidatePath("/admin/articles");
+  revalidatePath(`/admin/articles/${id}`);
+  revalidatePath("/");
+}
+
+async function replaceArticleImage(id: string, newUrl: string) {
+  const existing = await prisma.article.findUnique({ where: { id }, select: { imageUrl: true } });
+
+  await prisma.article.update({ where: { id }, data: { imageUrl: newUrl } });
+
+  if (existing?.imageUrl) {
+    await deleteImage(existing.imageUrl);
+  }
+
+  revalidatePath("/admin/articles");
+  revalidatePath(`/admin/articles/${id}`);
+  revalidatePath("/");
+}
+
+export type ImageActionState = { status: "idle" | "success" | "error"; message?: string };
+
+export async function uploadArticleImage(
+  id: string,
+  _prevState: ImageActionState,
+  formData: FormData
+): Promise<ImageActionState> {
+  await requireAdmin();
+
+  const file = formData.get("imageFile");
+  if (!(file instanceof File) || file.size === 0) {
+    return { status: "error", message: "Моля, избери файл." };
+  }
+  if (!file.type.startsWith("image/")) {
+    return { status: "error", message: "Файлът трябва да е изображение." };
+  }
+
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const url = await uploadImage({ bytes, contentType: file.type }, id);
+  await replaceArticleImage(id, url);
+
+  return { status: "success" };
+}
+
+export async function setArticleImageFromUrl(
+  id: string,
+  _prevState: ImageActionState,
+  formData: FormData
+): Promise<ImageActionState> {
+  await requireAdmin();
+
+  const sourceUrl = String(formData.get("sourceUrl") ?? "").trim();
+  if (!sourceUrl) {
+    return { status: "error", message: "Въведи URL адрес." };
+  }
+
+  const image = await fetchImageFromUrl(sourceUrl);
+  if (!image) {
+    return { status: "error", message: "Не успях да извлека снимка от този адрес." };
+  }
+
+  const url = await uploadImage(image, id);
+  await replaceArticleImage(id, url);
+
+  return { status: "success" };
+}
+
+export async function generateArticleImage(
+  id: string,
+  _prevState: ImageActionState
+): Promise<ImageActionState> {
+  await requireAdmin();
+
+  const article = await prisma.article.findUnique({
+    where: { id },
+    select: { title: true, excerpt: true },
+  });
+  if (!article) {
+    return { status: "error", message: "Статията не е намерена." };
+  }
+
+  let image;
+  try {
+    image = await generateImageWithAI({ title: article.title, excerpt: article.excerpt ?? "" });
+  } catch (error) {
+    if (error instanceof ImageGenQuotaError) {
+      return { status: "error", message: error.message };
+    }
+    return { status: "error", message: "AI генерирането се провали. Опитай пак." };
+  }
+  if (!image) {
+    return { status: "error", message: "AI генерирането се провали. Опитай пак." };
+  }
+
+  const url = await uploadImage(image, id);
+  await replaceArticleImage(id, url);
+
+  return { status: "success" };
+}
+
+export async function removeArticleImage(id: string) {
+  await requireAdmin();
+
+  const existing = await prisma.article.findUnique({ where: { id }, select: { imageUrl: true } });
+  await prisma.article.update({ where: { id }, data: { imageUrl: null } });
+
+  if (existing?.imageUrl) {
+    await deleteImage(existing.imageUrl);
+  }
 
   revalidatePath("/admin/articles");
   revalidatePath(`/admin/articles/${id}`);
