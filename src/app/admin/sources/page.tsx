@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { deleteSource } from "@/lib/actions/sources";
 import { runScraperNow } from "@/lib/actions/scraper";
+import ScrapeButton from "@/components/admin/ScrapeButton";
 
 const STATS_WINDOW_DAYS = 3;
 
@@ -67,12 +68,7 @@ export default async function AdminSourcesPage({
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Източници</h1>
         <div className="flex gap-3">
           <form action={runScraperNow}>
-            <button
-              type="submit"
-              className="rounded-md border border-primary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
-            >
-              Изтегли новини сега
-            </button>
+            <ScrapeButton />
           </form>
           <Link
             href="/admin/sources/new"
