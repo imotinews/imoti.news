@@ -8,7 +8,7 @@ export async function classifyAndRewrite(input: {
   sourceName: string;
   contentType?: "real_estate" | "lifestyle";
 }): Promise<ClassifyResult> {
-  const provider = process.env.AI_PROVIDER ?? "anthropic";
+  const provider = process.env.AI_PROVIDER || "anthropic";
 
   if (provider === "gemini") {
     return classifyAndRewriteWithGemini(input);
