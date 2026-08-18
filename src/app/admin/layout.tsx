@@ -60,6 +60,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <Link href="/admin/stock-photos" className="text-foreground/80 hover:text-primary">
                 Stock снимки
               </Link>
+              <Link href="/admin/statistika" className="text-foreground/80 hover:text-primary">
+                Статистика
+              </Link>
             </nav>
           </div>
 
