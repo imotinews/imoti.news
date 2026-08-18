@@ -1,20 +1,22 @@
 import Container from "@/components/layout/Container";
+import { prisma } from "@/lib/prisma";
 
 export const metadata = {
   title: "Политика за поверителност",
   description: "Как imoti.news обработва лични данни.",
 };
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const page = await prisma.siteContent.findUnique({ where: { slug: "poveritelnost" } });
+
   return (
     <Container>
       <div className="max-w-2xl py-12">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Политика за поверителност
+          {page?.title ?? "Политика за поверителност"}
         </h1>
-        <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-          imoti.news събира само имейл адрес при абонамент за бюлетин, с потвърждение
-          (double opt-in) и лесна отписка при всяко писмо. Не споделяме данни с трети страни.
+        <p className="mt-4 whitespace-pre-line text-base leading-relaxed text-muted-foreground">
+          {page?.body}
         </p>
       </div>
     </Container>

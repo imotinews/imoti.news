@@ -70,18 +70,27 @@ export default async function Home() {
     );
   }
 
-  const withReadMinutes: ArticleCardData[] = latest.map((article) => ({
+  const heroIndex = latest.findIndex((article) => article.isHero);
+  const lead = heroIndex >= 0 ? latest[heroIndex] : latest[0];
+  const rest = latest.filter((article) => article.slug !== lead.slug);
+
+  const featured = rest.filter((article) => article.isFeatured);
+  const gridSource = (featured.length > 0 ? featured : rest).slice(0, 4);
+  const gridSlugs = new Set(gridSource.map((article) => article.slug));
+  const sideSource = rest.filter((article) => !gridSlugs.has(article.slug)).slice(0, 3);
+
+  const toCardData = (article: (typeof latest)[number]): ArticleCardData => ({
     ...article,
     readMinutes: estimateReadMinutes(article.rewrittenContent),
-  }));
+  });
 
-  const [lead, ...rest] = withReadMinutes;
-  const sideArticles = rest.slice(0, 3);
-  const gridArticles = rest.slice(3, 7);
+  const leadCard = toCardData(lead);
+  const sideArticles = sideSource.map(toCardData);
+  const gridArticles = gridSource.map(toCardData);
 
   return (
     <>
-      <HeroSection lead={lead} sideArticles={sideArticles} />
+      <HeroSection lead={leadCard} sideArticles={sideArticles} />
 
       <MarketWatch />
 

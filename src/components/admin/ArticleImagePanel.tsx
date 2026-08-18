@@ -6,6 +6,7 @@ import {
   setArticleImageFromUrl,
   generateArticleImage,
   removeArticleImage,
+  setArticleImageFromStock,
   type ImageActionState,
 } from "@/lib/actions/articles";
 
@@ -14,9 +15,11 @@ const initialState: ImageActionState = { status: "idle" };
 export default function ArticleImagePanel({
   articleId,
   imageUrl,
+  stockPhotos = [],
 }: {
   articleId: string;
   imageUrl: string | null;
+  stockPhotos?: { id: string; imageUrl: string }[];
 }) {
   const uploadAction = uploadArticleImage.bind(null, articleId);
   const urlAction = setArticleImageFromUrl.bind(null, articleId);
@@ -106,6 +109,22 @@ export default function ArticleImagePanel({
             <p className="mt-1 text-xs text-red-600">{genState.message}</p>
           )}
         </form>
+
+        {stockPhotos.length > 0 && (
+          <div>
+            <label className="block text-xs font-medium text-foreground">Избери от Stock</label>
+            <div className="mt-1.5 grid grid-cols-4 gap-1.5">
+              {stockPhotos.map((photo) => (
+                <form key={photo.id} action={async () => { await setArticleImageFromStock(articleId, photo.imageUrl); }}>
+                  <button type="submit" className="block w-full overflow-hidden rounded-md border border-border">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photo.imageUrl} alt="" className="aspect-square w-full object-cover" />
+                  </button>
+                </form>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

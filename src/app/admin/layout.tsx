@@ -48,6 +48,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <Link href="/admin/byuletin" className="text-foreground/80 hover:text-primary">
                 Бюлетин
               </Link>
+              <Link href="/admin/stranitsi" className="text-foreground/80 hover:text-primary">
+                Страници
+              </Link>
+              <Link href="/admin/market-watch" className="text-foreground/80 hover:text-primary">
+                Market Watch
+              </Link>
+              <Link href="/admin/stock-photos" className="text-foreground/80 hover:text-primary">
+                Stock снимки
+              </Link>
             </nav>
           </div>
 

@@ -71,6 +71,45 @@ async function seedAdmin() {
   console.log("===============================================\n");
 }
 
+const SITE_CONTENT = [
+  {
+    slug: "za-nas",
+    title: "За нас",
+    body: "imoti.news следи пазара на недвижими имоти в България — новини, анализи и тенденции от водещи източници, прегледани и преразказани на едно място, с ясно позоваване на оригинала при всяка статия.",
+  },
+  {
+    slug: "kontakti",
+    title: "Контакти",
+    body: "За въпроси и обратна връзка: info@imoti.news",
+  },
+  {
+    slug: "reklama",
+    title: "Реклама",
+    body: "За рекламни възможности в imoti.news: info@imoti.news",
+  },
+  {
+    slug: "obshti-usloviya",
+    title: "Общи условия",
+    body: "Съдържанието в imoti.news е преразказано от оригинални източници, с изрично позоваване на всяка статия. Използвайки сайта, приемате, че съдържанието се предоставя с информационна цел.",
+  },
+  {
+    slug: "poveritelnost",
+    title: "Политика за поверителност",
+    body: "imoti.news събира само имейл адрес при абонамент за бюлетин, с потвърждение (double opt-in) и лесна отписка при всяко писмо. Не споделяме данни с трети страни.",
+  },
+];
+
+async function seedSiteContent() {
+  for (const page of SITE_CONTENT) {
+    await prisma.siteContent.upsert({
+      where: { slug: page.slug },
+      update: {},
+      create: page,
+    });
+  }
+  console.log(`Seeded ${SITE_CONTENT.length} site content pages (skipped any already present).`);
+}
+
 async function seedSources() {
   for (const source of SOURCES) {
     const existing = await prisma.source.findFirst({ where: { url: source.url } });
@@ -85,6 +124,7 @@ async function main() {
   await seedCategories();
   await seedAdmin();
   await seedSources();
+  await seedSiteContent();
 }
 
 main()

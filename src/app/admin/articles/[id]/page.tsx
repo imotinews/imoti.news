@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { publishArticle, unpublishArticle } from "@/lib/actions/articles";
+import { publishArticle, unpublishArticle, updateArticlePlacement } from "@/lib/actions/articles";
 import ArticleImagePanel from "@/components/admin/ArticleImagePanel";
 
 export default async function ArticlePreviewPage({
@@ -10,10 +10,10 @@ export default async function ArticlePreviewPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const article = await prisma.article.findUnique({
-    where: { id },
-    include: { category: true },
-  });
+  const [article, stockPhotos] = await Promise.all([
+    prisma.article.findUnique({ where: { id }, include: { category: true } }),
+    prisma.stockPhoto.findMany({ orderBy: { createdAt: "desc" }, take: 20 }),
+  ]);
 
   if (!article) {
     notFound();
@@ -109,7 +109,44 @@ export default async function ArticlePreviewPage({
           </div>
 
           <div className="mt-4">
-            <ArticleImagePanel articleId={article.id} imageUrl={article.imageUrl} />
+            <ArticleImagePanel articleId={article.id} imageUrl={article.imageUrl} stockPhotos={stockPhotos} />
+          </div>
+
+          <div className="mt-4 rounded-lg border border-border bg-background p-4">
+            <h2 className="text-sm font-semibold text-foreground">Начална страница</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Контролира къде се появява статията на началната страница.
+            </p>
+            <form action={updateArticlePlacement.bind(null, article.id)} className="mt-3 space-y-2">
+              <label className="flex items-center gap-2 text-sm text-foreground">
+                <input type="checkbox" name="isHero" defaultChecked={article.isHero} className="h-4 w-4" />
+                Hero (главна статия) — само една активна наведнъж
+              </label>
+              <label className="flex items-center gap-2 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  name="isFeatured"
+                  defaultChecked={article.isFeatured}
+                  className="h-4 w-4"
+                />
+                Featured (открояваща се)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  name="isOriginal"
+                  defaultChecked={article.isOriginal}
+                  className="h-4 w-4"
+                />
+                imoti.news Original
+              </label>
+              <button
+                type="submit"
+                className="mt-2 w-full rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                Запази
+              </button>
+            </form>
           </div>
 
           <div className="mt-4 rounded-lg border border-border bg-background p-4 text-sm">

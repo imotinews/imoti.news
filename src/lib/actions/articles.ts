@@ -127,18 +127,32 @@ export async function unpublishArticle(id: string) {
   revalidatePath("/");
 }
 
+// Stock photos are shared across many articles -- deleting the underlying
+// blob just because one article stopped using it would break every other
+// article still pointing at the same URL. Skip the delete for those.
+async function deleteArticleImageBlob(url: string) {
+  const isStock = await prisma.stockPhoto.findFirst({ where: { imageUrl: url }, select: { id: true } });
+  if (isStock) return;
+  await deleteImage(url);
+}
+
 async function replaceArticleImage(id: string, newUrl: string) {
   const existing = await prisma.article.findUnique({ where: { id }, select: { imageUrl: true } });
 
   await prisma.article.update({ where: { id }, data: { imageUrl: newUrl } });
 
   if (existing?.imageUrl) {
-    await deleteImage(existing.imageUrl);
+    await deleteArticleImageBlob(existing.imageUrl);
   }
 
   revalidatePath("/admin/articles");
   revalidatePath(`/admin/articles/${id}`);
   revalidatePath("/");
+}
+
+export async function setArticleImageFromStock(id: string, stockImageUrl: string) {
+  await requireAdmin();
+  await replaceArticleImage(id, stockImageUrl);
 }
 
 export type ImageActionState = { status: "idle" | "success" | "error"; message?: string };
@@ -228,8 +242,28 @@ export async function removeArticleImage(id: string) {
   await prisma.article.update({ where: { id }, data: { imageUrl: null } });
 
   if (existing?.imageUrl) {
-    await deleteImage(existing.imageUrl);
+    await deleteArticleImageBlob(existing.imageUrl);
   }
+
+  revalidatePath("/admin/articles");
+  revalidatePath(`/admin/articles/${id}`);
+  revalidatePath("/");
+}
+
+export async function updateArticlePlacement(id: string, formData: FormData) {
+  await requireAdmin();
+
+  const isHero = formData.get("isHero") === "on";
+  const isFeatured = formData.get("isFeatured") === "on";
+  const isOriginal = formData.get("isOriginal") === "on";
+
+  await prisma.$transaction(async (tx) => {
+    if (isHero) {
+      // Only one article can be the hero at a time.
+      await tx.article.updateMany({ where: { isHero: true, NOT: { id } }, data: { isHero: false } });
+    }
+    await tx.article.update({ where: { id }, data: { isHero, isFeatured, isOriginal } });
+  });
 
   revalidatePath("/admin/articles");
   revalidatePath(`/admin/articles/${id}`);

@@ -79,6 +79,9 @@ model Article {
   status            ArticleStatus @default(draft)
   publishedAt       DateTime?     @map("published_at")
   aiGenerated       Boolean       @default(false) @map("ai_generated")
+  isHero            Boolean       @default(false) @map("is_hero")
+  isFeatured        Boolean       @default(false) @map("is_featured")
+  isOriginal        Boolean       @default(false) @map("is_original")
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
 
@@ -101,6 +104,34 @@ model ScrapedUrl {
 
   @@index([sourceId, createdAt])
   @@map("scraped_urls")
+}
+
+model SiteContent {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  body      String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("site_content")
+}
+
+model MarketWatch {
+  id        String   @id @default(cuid())
+  summary   String
+  imageUrl  String?  @map("image_url")
+  stats     Json     @default("[]")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("market_watch")
+}
+
+model StockPhoto {
+  id        String   @id @default(cuid())
+  imageUrl  String   @map("image_url")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("stock_photos")
 }
 
 model NewsletterSubscriber {

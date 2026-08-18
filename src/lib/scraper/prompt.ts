@@ -1,7 +1,7 @@
-import { CATEGORIES } from "@/lib/categories";
+import { SCRAPABLE_CATEGORY_SLUGS } from "@/lib/categories";
 import type { ClassifyResult } from "./types";
 
-export const CATEGORY_SLUGS = CATEGORIES.map((c) => c.slug);
+export const CATEGORY_SLUGS = SCRAPABLE_CATEGORY_SLUGS;
 
 export const SYSTEM_PROMPT = `Ти си редактор в imoti.news — българско новинарско издание за пазара на недвижими имоти. Получаваш оригинален текст на новина от друг сайт.
 
