@@ -54,7 +54,9 @@ export async function fetchListingLinks(listingUrl: string, limit = 10): Promise
   const seen = new Set<string>();
   const items: FeedItem[] = [];
 
-  for (const anchor of Array.from(dom.window.document.querySelectorAll("a[href]"))) {
+  const anchors = dom.window.document.querySelectorAll("a[href]") as unknown as HTMLAnchorElement[];
+
+  for (const anchor of Array.from(anchors)) {
     const href = anchor.getAttribute("href");
     if (!href) continue;
     if (!looksLikeArticleLink(href, baseOrigin)) continue;

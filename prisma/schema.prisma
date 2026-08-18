@@ -42,11 +42,12 @@ enum AdminRole {
 }
 
 model Category {
-  id        String    @id @default(cuid())
-  name      String
-  slug      String    @unique
-  scrapable Boolean   @default(true)
-  articles  Article[]
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  scrapable   Boolean      @default(true)
+  articles    Article[]
+  stockPhotos StockPhoto[]
 
   @@map("categories")
 }
@@ -157,10 +158,14 @@ model MarketWatch {
 }
 
 model StockPhoto {
-  id        String   @id @default(cuid())
-  imageUrl  String   @map("image_url")
-  createdAt DateTime @default(now()) @map("created_at")
+  id         String    @id @default(cuid())
+  imageUrl   String    @map("image_url")
+  categoryId String?   @map("category_id")
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  lastUsedAt DateTime? @map("last_used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
 
+  @@index([categoryId, lastUsedAt])
   @@map("stock_photos")
 }
 

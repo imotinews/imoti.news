@@ -12,6 +12,7 @@ import {
   generateImageWithAI,
   ImageGenQuotaError,
 } from "@/lib/images/store";
+import { applyCategoryStockPhotoFallback } from "@/lib/actions/stock-photo-fallback";
 
 async function requireAdmin() {
   const session = await auth();
@@ -44,7 +45,7 @@ export async function createArticle(formData: FormData) {
 
   const slug = await generateUniqueSlug(title);
 
-  await prisma.article.create({
+  const article = await prisma.article.create({
     data: {
       slug,
       title,
@@ -58,6 +59,10 @@ export async function createArticle(formData: FormData) {
       publishedAt: status === "published" ? new Date() : null,
     },
   });
+
+  if (status === "published") {
+    await applyCategoryStockPhotoFallback(article.id);
+  }
 
   revalidatePath("/admin/articles");
   revalidatePath("/");
@@ -95,6 +100,10 @@ export async function updateArticle(id: string, formData: FormData) {
     },
   });
 
+  if (status === "published") {
+    await applyCategoryStockPhotoFallback(id);
+  }
+
   revalidatePath("/admin/articles");
   revalidatePath("/");
   redirect("/admin/articles");
@@ -107,6 +116,8 @@ export async function publishArticle(id: string) {
     where: { id },
     data: { status: "published", publishedAt: new Date() },
   });
+
+  await applyCategoryStockPhotoFallback(id);
 
   revalidatePath("/admin/articles");
   revalidatePath(`/admin/articles/${id}`);

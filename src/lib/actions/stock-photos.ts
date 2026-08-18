@@ -15,11 +15,18 @@ async function requireAdmin() {
 // Files upload straight from the browser to Blob storage -- this only
 // persists the resulting URLs, keeping the request tiny no matter how
 // many photos are selected at once.
-export async function createStockPhotosFromUrls(urls: string[]) {
+export async function createStockPhotosFromUrls(urls: string[], categoryId: string | null) {
   await requireAdmin();
   for (const url of urls) {
-    await prisma.stockPhoto.create({ data: { imageUrl: url } });
+    await prisma.stockPhoto.create({ data: { imageUrl: url, categoryId } });
   }
+  revalidatePath("/admin/stock-photos");
+}
+
+export async function updateStockPhotoCategory(id: string, formData: FormData) {
+  await requireAdmin();
+  const categoryId = String(formData.get("categoryId") ?? "") || null;
+  await prisma.stockPhoto.update({ where: { id }, data: { categoryId } });
   revalidatePath("/admin/stock-photos");
 }
 
