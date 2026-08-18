@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { publishArticle, unpublishArticle, updateArticlePlacement } from "@/lib/actions/articles";
 import ArticleImagePanel from "@/components/admin/ArticleImagePanel";
 import ArticleGalleryPanel from "@/components/admin/ArticleGalleryPanel";
+import ArticleActionsPanel from "@/components/admin/ArticleActionsPanel";
+import ArticlePlacementPanel from "@/components/admin/ArticlePlacementPanel";
 
 export default async function ArticlePreviewPage({
   params,
@@ -59,98 +60,23 @@ export default async function ArticlePreviewPage({
         </article>
 
         <aside className="w-full shrink-0 lg:w-72">
-          <div className="rounded-lg border border-border bg-background p-4">
-            <h2 className="text-sm font-semibold text-foreground">Действия</h2>
-
-            <div className="mt-3 flex flex-col gap-2">
-              {article.status === "published" ? (
-                <form
-                  action={async () => {
-                    "use server";
-                    await unpublishArticle(article.id);
-                  }}
-                >
-                  <button
-                    type="submit"
-                    className="w-full rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                  >
-                    Върни в чернова
-                  </button>
-                </form>
-              ) : (
-                <form
-                  action={async () => {
-                    "use server";
-                    await publishArticle(article.id);
-                  }}
-                >
-                  <button
-                    type="submit"
-                    className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:opacity-90"
-                  >
-                    Публикувай сега
-                  </button>
-                </form>
-              )}
-
-              <Link
-                href={`/admin/articles/${article.id}/edit`}
-                className="w-full rounded-md border border-border px-4 py-2 text-center text-sm font-medium text-foreground transition-colors hover:bg-muted"
-              >
-                Редактирай
-              </Link>
-
-              {article.status === "published" && (
-                <Link
-                  href={`/statia/${article.slug}`}
-                  target="_blank"
-                  className="w-full rounded-md border border-border px-4 py-2 text-center text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                >
-                  Виж на живо ↗
-                </Link>
-              )}
-            </div>
-          </div>
+          <ArticleActionsPanel
+            article={article}
+            secondaryHref={`/admin/articles/${article.id}/edit`}
+            secondaryLabel="Редактирай"
+          />
 
           <div className="mt-4">
             <ArticleImagePanel articleId={article.id} imageUrl={article.imageUrl} stockPhotos={stockPhotos} />
           </div>
 
-          <div className="mt-4 rounded-lg border border-border bg-background p-4">
-            <h2 className="text-sm font-semibold text-foreground">Начална страница</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Контролира къде се появява статията на началната страница.
-            </p>
-            <form action={updateArticlePlacement.bind(null, article.id)} className="mt-3 space-y-2">
-              <label className="flex items-center gap-2 text-sm text-foreground">
-                <input type="checkbox" name="isHero" defaultChecked={article.isHero} className="h-4 w-4" />
-                Hero (главна статия) — само една активна наведнъж
-              </label>
-              <label className="flex items-center gap-2 text-sm text-foreground">
-                <input
-                  type="checkbox"
-                  name="isFeatured"
-                  defaultChecked={article.isFeatured}
-                  className="h-4 w-4"
-                />
-                Featured (открояваща се)
-              </label>
-              <label className="flex items-center gap-2 text-sm text-foreground">
-                <input
-                  type="checkbox"
-                  name="isOriginal"
-                  defaultChecked={article.isOriginal}
-                  className="h-4 w-4"
-                />
-                imoti.news Original
-              </label>
-              <button
-                type="submit"
-                className="mt-2 w-full rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-              >
-                Запази
-              </button>
-            </form>
+          <div className="mt-4">
+            <ArticlePlacementPanel
+              articleId={article.id}
+              isHero={article.isHero}
+              isFeatured={article.isFeatured}
+              isOriginal={article.isOriginal}
+            />
           </div>
 
           <div className="mt-4 rounded-lg border border-border bg-background p-4 text-sm">

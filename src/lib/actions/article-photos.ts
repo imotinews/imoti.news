@@ -36,6 +36,16 @@ export async function createArticlePhotosFromUrls(articleId: string, urls: strin
     nextOrder += 1;
   }
 
+  // No manually-chosen cover yet -- use the first gallery photo instead of
+  // making the admin upload the same picture twice.
+  const article = await prisma.article.findUnique({ where: { id: articleId }, select: { imageUrl: true } });
+  if (!article?.imageUrl) {
+    const firstPhoto = await prisma.articlePhoto.findFirst({ where: { articleId }, orderBy: { order: "asc" } });
+    if (firstPhoto) {
+      await prisma.article.update({ where: { id: articleId }, data: { imageUrl: firstPhoto.imageUrl } });
+    }
+  }
+
   await revalidateArticle(articleId);
 }
 
@@ -47,6 +57,25 @@ export async function deleteArticlePhoto(id: string) {
 
   await prisma.articlePhoto.delete({ where: { id } });
   await deleteImage(photo.imageUrl);
+
+  // If the deleted photo was standing in as the cover image, hand the role
+  // to the new first photo (or clear it if the gallery is now empty) so the
+  // cover never points at a blob that no longer exists.
+  const article = await prisma.article.findUnique({
+    where: { id: photo.articleId },
+    select: { imageUrl: true },
+  });
+  if (article?.imageUrl === photo.imageUrl) {
+    const nextPhoto = await prisma.articlePhoto.findFirst({
+      where: { articleId: photo.articleId },
+      orderBy: { order: "asc" },
+    });
+    await prisma.article.update({
+      where: { id: photo.articleId },
+      data: { imageUrl: nextPhoto?.imageUrl ?? null },
+    });
+  }
+
   await revalidateArticle(photo.articleId);
 }
 
