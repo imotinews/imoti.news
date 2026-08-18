@@ -24,7 +24,7 @@ export const getPublishedByCategorySlug = cache((categorySlug: string) => {
 export const getPublishedBySlug = cache((slug: string) => {
   return prisma.article.findUnique({
     where: { slug, status: "published" },
-    include: { category: true },
+    include: { category: true, photos: { orderBy: { order: "asc" } } },
   });
 });
 

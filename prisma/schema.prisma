@@ -98,6 +98,7 @@ model Article {
   isHero            Boolean       @default(false) @map("is_hero")
   isFeatured        Boolean       @default(false) @map("is_featured")
   isOriginal        Boolean       @default(false) @map("is_original")
+  photos            ArticlePhoto[]
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
 
@@ -105,6 +106,19 @@ model Article {
   @@index([categoryId])
   @@index([sourceId])
   @@map("articles")
+}
+
+model ArticlePhoto {
+  id        String   @id @default(cuid())
+  articleId String   @map("article_id")
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  imageUrl  String   @map("image_url")
+  caption   String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([articleId])
+  @@map("article_photos")
 }
 
 model ScrapedUrl {

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { publishArticle, unpublishArticle, updateArticlePlacement } from "@/lib/actions/articles";
 import ArticleImagePanel from "@/components/admin/ArticleImagePanel";
+import ArticleGalleryPanel from "@/components/admin/ArticleGalleryPanel";
 
 export default async function ArticlePreviewPage({
   params,
@@ -11,7 +12,10 @@ export default async function ArticlePreviewPage({
 }) {
   const { id } = await params;
   const [article, stockPhotos] = await Promise.all([
-    prisma.article.findUnique({ where: { id }, include: { category: true } }),
+    prisma.article.findUnique({
+      where: { id },
+      include: { category: true, photos: { orderBy: { order: "asc" } } },
+    }),
     prisma.stockPhoto.findMany({ orderBy: { createdAt: "desc" }, take: 20 }),
   ]);
 
@@ -191,6 +195,8 @@ export default async function ArticlePreviewPage({
           </div>
         </aside>
       </div>
+
+      <ArticleGalleryPanel articleId={article.id} photos={article.photos} />
     </div>
   );
 }

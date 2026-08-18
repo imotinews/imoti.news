@@ -139,6 +139,31 @@ export default async function ArticlePage({
             </>
           )}
 
+          {article.photos.length > 0 && (
+            <div className="mt-8">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Галерия
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {article.photos.map((photo) => (
+                  <figure key={photo.id}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.imageUrl}
+                      alt={photo.caption ?? article.title}
+                      className="aspect-[4/3] w-full rounded-md object-cover"
+                    />
+                    {photo.caption && (
+                      <figcaption className="mt-1 text-xs text-muted-foreground">
+                        {photo.caption}
+                      </figcaption>
+                    )}
+                  </figure>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="mt-8 rounded-md border border-border bg-muted p-4 text-sm text-muted-foreground">
             Източник: {article.sourceName} —{" "}
             <a
