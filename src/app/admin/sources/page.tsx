@@ -23,14 +23,7 @@ const STATUS_CLASS: Record<string, string> = {
 export default async function AdminSourcesPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    ran?: string;
-    created?: string;
-    irrelevant?: string;
-    duplicates?: string;
-    similar?: string;
-    errors?: string;
-  }>;
+  searchParams: Promise<{ started?: string }>;
 }) {
   const params = await searchParams;
   const sources = await prisma.source.findMany({ orderBy: { name: "asc" } });
@@ -79,13 +72,12 @@ export default async function AdminSourcesPage({
         </div>
       </div>
 
-      {params.ran === "1" && (
+      {params.started === "1" && (
         <div className="mt-4 rounded-md border border-border bg-muted p-4 text-sm text-foreground">
-          Готово: <strong>{params.created}</strong> нови чернови, {params.irrelevant} нерелевантни
-          пропуснати, {params.duplicates} вече видени, {params.similar ?? 0} подобни на съществуващи,{" "}
-          {params.errors} грешки.{" "}
-          <Link href="/admin/articles?status=draft" className="text-primary hover:underline">
-            Виж чернови →
+          Скрейпването върви на заден план — може да отнеме няколко минути. Резултатите ще се
+          появят по-долу във всеки източник; презареди страницата след малко, за да ги видиш.{" "}
+          <Link href="/admin/sources" className="text-primary hover:underline">
+            Презареди сега →
           </Link>
         </div>
       )}

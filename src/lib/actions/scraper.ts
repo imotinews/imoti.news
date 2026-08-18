@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
@@ -11,17 +12,17 @@ export async function runScraperNow() {
     throw new Error("Не сте влезли в системата.");
   }
 
-  const results = await runScraper();
+  // A full run across many sources, with the per-item AI rate-limit delay,
+  // can take longer than the request is willing to wait -- the browser was
+  // showing "This page can't be loaded" even though the run kept going and
+  // finished fine server-side. Detaching it with after() means the request
+  // returns immediately; progress is visible on admin/sources (per-source
+  // "last attempt" + stats) as it writes to the database.
+  after(async () => {
+    await runScraper();
+    revalidatePath("/admin/sources");
+    revalidatePath("/admin/articles");
+  });
 
-  const created = results.reduce((sum, r) => sum + r.created, 0);
-  const irrelevant = results.reduce((sum, r) => sum + r.skippedIrrelevant, 0);
-  const duplicates = results.reduce((sum, r) => sum + r.skippedDuplicate, 0);
-  const similar = results.reduce((sum, r) => sum + r.skippedSimilar, 0);
-  const errors = results.reduce((sum, r) => sum + r.errors.length, 0);
-
-  revalidatePath("/admin/sources");
-  revalidatePath("/admin/articles");
-  redirect(
-    `/admin/sources?ran=1&created=${created}&irrelevant=${irrelevant}&duplicates=${duplicates}&similar=${similar}&errors=${errors}`
-  );
+  redirect("/admin/sources?started=1");
 }
