@@ -54,7 +54,7 @@ export default async function Header() {
           </div>
         </div>
 
-        <nav className="hidden items-center gap-6 overflow-x-auto pb-4 md:flex">
+        <nav className="hidden flex-wrap items-center gap-x-5 gap-y-2 pb-4 md:flex">
           {categories.map((category) => (
             <Link
               key={category.slug}
