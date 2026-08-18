@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import {
   SYSTEM_PROMPT,
   LIFESTYLE_SYSTEM_PROMPT,
-  CLASSIFICATION_SCHEMA,
+  buildClassificationSchema,
   buildUserPrompt,
   toClassifyResult,
   type RawClassification,
@@ -11,19 +11,22 @@ import type { ClassifyResult } from "../types";
 
 const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-export async function classifyAndRewriteWithGemini(input: {
-  title: string;
-  text: string;
-  sourceName: string;
-  contentType?: "real_estate" | "lifestyle";
-}): Promise<ClassifyResult> {
+export async function classifyAndRewriteWithGemini(
+  input: {
+    title: string;
+    text: string;
+    sourceName: string;
+    contentType?: "real_estate" | "lifestyle";
+  },
+  categorySlugs: string[]
+): Promise<ClassifyResult> {
   const response = await client.models.generateContent({
     model: "gemini-3.5-flash-lite",
     contents: buildUserPrompt(input),
     config: {
       systemInstruction: input.contentType === "lifestyle" ? LIFESTYLE_SYSTEM_PROMPT : SYSTEM_PROMPT,
       responseMimeType: "application/json",
-      responseSchema: CLASSIFICATION_SCHEMA,
+      responseSchema: buildClassificationSchema(categorySlugs),
     },
   });
 
@@ -41,5 +44,5 @@ export async function classifyAndRewriteWithGemini(input: {
     return { relevant: false };
   }
 
-  return toClassifyResult(raw);
+  return toClassifyResult(raw, categorySlugs);
 }

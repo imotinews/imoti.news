@@ -42,12 +42,28 @@ enum AdminRole {
 }
 
 model Category {
-  id       String    @id @default(cuid())
-  name     String
-  slug     String    @unique
-  articles Article[]
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  scrapable Boolean   @default(true)
+  articles  Article[]
 
   @@map("categories")
+}
+
+model SocialLinks {
+  id         String   @id @default(cuid())
+  facebook   String?
+  instagram  String?
+  x          String?
+  linkedin   String?
+  youtube    String?
+  tiktok     String?
+  telegram   String?
+  viber      String?
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("social_links")
 }
 
 model Source {

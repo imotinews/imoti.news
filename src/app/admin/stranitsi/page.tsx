@@ -41,6 +41,21 @@ export default async function AdminSiteContentPage() {
                 </td>
               </tr>
             ))}
+            <tr>
+              <td className="px-4 py-3 text-foreground">
+                Социални мрежи
+                <div className="text-xs text-muted-foreground">линкове към твоите канали</div>
+              </td>
+              <td className="px-4 py-3 text-muted-foreground">—</td>
+              <td className="px-4 py-3 text-right">
+                <Link
+                  href="/admin/stranitsi/sotsialni-mrezhi"
+                  className="text-primary hover:underline"
+                >
+                  Редактирай
+                </Link>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>

@@ -1,7 +1,13 @@
-import { SCRAPABLE_CATEGORY_SLUGS } from "@/lib/categories";
+import { prisma } from "@/lib/prisma";
 import type { ClassifyResult } from "./types";
 
-export const CATEGORY_SLUGS = SCRAPABLE_CATEGORY_SLUGS;
+export async function getScrapableCategorySlugs(): Promise<string[]> {
+  const categories = await prisma.category.findMany({
+    where: { scrapable: true },
+    select: { slug: true },
+  });
+  return categories.map((c) => c.slug);
+}
 
 export const SYSTEM_PROMPT = `Ти си редактор в imoti.news — българско новинарско издание за пазара на недвижими имоти. Получаваш оригинален текст на новина от друг сайт.
 
@@ -41,36 +47,38 @@ export function buildUserPrompt(input: { title: string; text: string; sourceName
   return `Източник: ${input.sourceName}\n\nЗаглавие: ${input.title}\n\nТекст:\n${input.text.slice(0, 8000)}`;
 }
 
-export const CLASSIFICATION_SCHEMA = {
-  type: "object",
-  properties: {
-    relevant: {
-      type: "boolean",
-      description: "Дали новината е релевантна за пазара на недвижими имоти в България.",
+export function buildClassificationSchema(categorySlugs: string[]) {
+  return {
+    type: "object",
+    properties: {
+      relevant: {
+        type: "boolean",
+        description: "Дали новината е релевантна за пазара на недвижими имоти в България.",
+      },
+      category_slug: {
+        type: "string",
+        enum: categorySlugs,
+        description: "Най-подходящата категория, само ако relevant=true.",
+      },
+      title: {
+        type: "string",
+        description:
+          "Преразказано заглавие на български — ЕДИН кратък ред, само заглавието, нищо друго. Ако relevant=false, върни празен низ.",
+      },
+      excerpt: {
+        type: "string",
+        description:
+          "Кратко резюме от точно 1-2 изречения — нищо повече. Ако relevant=false, върни празен низ.",
+      },
+      content: {
+        type: "string",
+        description:
+          "Пълният преразказан текст на статията на български, отделно поле от заглавието — не повтаряй заглавието тук. Раздели абзаците с нов ред (\\n). Не включвай блок 'Източник'. Ако relevant=false, върни празен низ.",
+      },
     },
-    category_slug: {
-      type: "string",
-      enum: CATEGORY_SLUGS,
-      description: "Най-подходящата категория, само ако relevant=true.",
-    },
-    title: {
-      type: "string",
-      description:
-        "Преразказано заглавие на български — ЕДИН кратък ред, само заглавието, нищо друго. Ако relevant=false, върни празен низ.",
-    },
-    excerpt: {
-      type: "string",
-      description:
-        "Кратко резюме от точно 1-2 изречения — нищо повече. Ако relevant=false, върни празен низ.",
-    },
-    content: {
-      type: "string",
-      description:
-        "Пълният преразказан текст на статията на български, отделно поле от заглавието — не повтаряй заглавието тук. Раздели абзаците с нов ред (\\n). Не включвай блок 'Източник'. Ако relevant=false, върни празен низ.",
-    },
-  },
-  required: ["relevant", "title", "excerpt", "content"],
-} as const;
+    required: ["relevant", "title", "excerpt", "content"],
+  } as const;
+}
 
 export type RawClassification = {
   relevant: boolean;
@@ -80,7 +88,10 @@ export type RawClassification = {
   content?: string;
 };
 
-export function toClassifyResult(raw: RawClassification | null | undefined): ClassifyResult {
+export function toClassifyResult(
+  raw: RawClassification | null | undefined,
+  categorySlugs: string[]
+): ClassifyResult {
   if (!raw || !raw.relevant || !raw.title || !raw.content) {
     return { relevant: false };
   }
@@ -90,7 +101,7 @@ export function toClassifyResult(raw: RawClassification | null | undefined): Cla
     title: raw.title,
     content: raw.content,
     excerpt: raw.excerpt ?? "",
-    categorySlug: CATEGORY_SLUGS.includes(raw.category_slug ?? "")
+    categorySlug: categorySlugs.includes(raw.category_slug ?? "")
       ? (raw.category_slug as string)
       : null,
   };

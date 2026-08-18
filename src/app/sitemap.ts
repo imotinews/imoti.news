@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
-import { CATEGORIES } from "@/lib/categories";
 import { siteUrl } from "@/lib/newsletter/resend-client";
 
 // Without this, Next.js treats /sitemap.xml as static and tries to query the
@@ -11,15 +10,18 @@ import { siteUrl } from "@/lib/newsletter/resend-client";
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const articles = await prisma.article.findMany({
-    where: { status: "published" },
-    select: { slug: true, updatedAt: true },
-    orderBy: { publishedAt: "desc" },
-  });
+  const [articles, categories] = await Promise.all([
+    prisma.article.findMany({
+      where: { status: "published" },
+      select: { slug: true, updatedAt: true },
+      orderBy: { publishedAt: "desc" },
+    }),
+    prisma.category.findMany({ select: { slug: true } }),
+  ]);
 
   const staticEntries: MetadataRoute.Sitemap = [
     { url: siteUrl("/"), changeFrequency: "hourly", priority: 1 },
-    ...CATEGORIES.map((category) => ({
+    ...categories.map((category) => ({
       url: siteUrl(`/kategoriya/${category.slug}`),
       changeFrequency: "hourly" as const,
       priority: 0.8,

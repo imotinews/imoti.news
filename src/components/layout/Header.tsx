@@ -1,9 +1,11 @@
 import Link from "next/link";
 import Container from "./Container";
 import MobileMenu from "./MobileMenu";
-import { CATEGORIES } from "@/lib/categories";
+import { prisma } from "@/lib/prisma";
 
-export default function Header() {
+export default async function Header() {
+  const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
+
   return (
     <header className="border-b border-border bg-background">
       <Container>
@@ -48,12 +50,12 @@ export default function Header() {
               За нас
             </Link>
 
-            <MobileMenu categories={CATEGORIES} />
+            <MobileMenu categories={categories} />
           </div>
         </div>
 
         <nav className="hidden items-center gap-6 overflow-x-auto pb-4 md:flex">
-          {CATEGORIES.map((category) => (
+          {categories.map((category) => (
             <Link
               key={category.slug}
               href={`/kategoriya/${category.slug}`}

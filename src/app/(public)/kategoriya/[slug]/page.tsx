@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Container from "@/components/layout/Container";
 import ArticleCard from "@/components/articles/ArticleCard";
 import AdSlotContainer from "@/components/ads/AdSlotContainer";
-import { CATEGORIES } from "@/lib/categories";
+import { prisma } from "@/lib/prisma";
 import { getPublishedByCategorySlug } from "@/lib/queries";
 import { siteUrl } from "@/lib/newsletter/resend-client";
 import { estimateReadMinutes } from "@/lib/article-helpers";
@@ -16,7 +16,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const category = CATEGORIES.find((c) => c.slug === slug);
+  const category = await prisma.category.findUnique({ where: { slug } });
 
   if (!category) {
     return { title: "Категорията не е намерена" };
@@ -36,7 +36,7 @@ export default async function CategoryPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const category = CATEGORIES.find((c) => c.slug === slug);
+  const category = await prisma.category.findUnique({ where: { slug } });
 
   if (!category) {
     notFound();

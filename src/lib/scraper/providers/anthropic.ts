@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import {
   SYSTEM_PROMPT,
   LIFESTYLE_SYSTEM_PROMPT,
-  CLASSIFICATION_SCHEMA,
+  buildClassificationSchema,
   buildUserPrompt,
   toClassifyResult,
   type RawClassification,
@@ -11,18 +11,21 @@ import type { ClassifyResult } from "../types";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 30000 });
 
-const tool: Anthropic.Tool = {
-  name: "submit_classification",
-  description: "Submit the relevance classification and, if relevant, the rewritten article.",
-  input_schema: CLASSIFICATION_SCHEMA as unknown as Anthropic.Tool.InputSchema,
-};
+export async function classifyAndRewriteWithAnthropic(
+  input: {
+    title: string;
+    text: string;
+    sourceName: string;
+    contentType?: "real_estate" | "lifestyle";
+  },
+  categorySlugs: string[]
+): Promise<ClassifyResult> {
+  const tool: Anthropic.Tool = {
+    name: "submit_classification",
+    description: "Submit the relevance classification and, if relevant, the rewritten article.",
+    input_schema: buildClassificationSchema(categorySlugs) as unknown as Anthropic.Tool.InputSchema,
+  };
 
-export async function classifyAndRewriteWithAnthropic(input: {
-  title: string;
-  text: string;
-  sourceName: string;
-  contentType?: "real_estate" | "lifestyle";
-}): Promise<ClassifyResult> {
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 2000,
@@ -36,5 +39,5 @@ export async function classifyAndRewriteWithAnthropic(input: {
     (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
   );
 
-  return toClassifyResult(toolUse?.input as RawClassification | undefined);
+  return toClassifyResult(toolUse?.input as RawClassification | undefined, categorySlugs);
 }

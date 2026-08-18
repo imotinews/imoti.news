@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { Category } from "@/lib/categories";
+
+type Category = { slug: string; name: string };
 
 export default function MobileMenu({ categories }: { categories: Category[] }) {
   const [open, setOpen] = useState(false);

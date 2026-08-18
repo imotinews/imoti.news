@@ -39,14 +39,17 @@ const SOURCES = [
 ];
 
 async function seedCategories() {
+  // Only creates missing rows -- never overwrites name/scrapable on a
+  // category that already exists, so admin edits made via /admin/kategorii
+  // survive re-running the seed script.
   for (const category of CATEGORIES) {
     await prisma.category.upsert({
       where: { slug: category.slug },
-      update: { name: category.name },
-      create: { slug: category.slug, name: category.name },
+      update: {},
+      create: { slug: category.slug, name: category.name, scrapable: category.scrapable ?? true },
     });
   }
-  console.log(`Seeded ${CATEGORIES.length} categories.`);
+  console.log(`Seeded categories (${CATEGORIES.length} candidates, skipped any already present).`);
 }
 
 async function seedAdmin() {
