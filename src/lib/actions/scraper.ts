@@ -22,6 +22,10 @@ export async function runScraperNow() {
     await runScraper();
     revalidatePath("/admin/sources");
     revalidatePath("/admin/articles");
+    // The draft-count badge lives in the shared admin layout, not the
+    // /admin/articles page itself -- without this it stays stale until
+    // something else happens to revalidate the layout.
+    revalidatePath("/admin", "layout");
   });
 
   redirect("/admin/sources?started=1");

@@ -102,7 +102,12 @@ export default async function AdminArticlesPage({
                   </span>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">
-                  {article.createdAt.toLocaleDateString("bg-BG")}
+                  {article.createdAt.toLocaleString("bg-BG", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-3">

@@ -65,6 +65,7 @@ export async function createArticle(formData: FormData) {
   }
 
   revalidatePath("/admin/articles");
+  revalidatePath("/admin", "layout");
   revalidatePath("/");
   redirect("/admin/articles");
 }
@@ -105,6 +106,7 @@ export async function updateArticle(id: string, formData: FormData) {
   }
 
   revalidatePath("/admin/articles");
+  revalidatePath("/admin", "layout");
   revalidatePath("/");
   redirect("/admin/articles");
 }
@@ -121,6 +123,7 @@ export async function publishArticle(id: string) {
 
   revalidatePath("/admin/articles");
   revalidatePath(`/admin/articles/${id}`);
+  revalidatePath("/admin", "layout");
   revalidatePath("/");
   revalidatePath(`/statia/${article.slug}`);
 }
@@ -135,6 +138,7 @@ export async function unpublishArticle(id: string) {
 
   revalidatePath("/admin/articles");
   revalidatePath(`/admin/articles/${id}`);
+  revalidatePath("/admin", "layout");
   revalidatePath("/");
 }
 
@@ -271,5 +275,6 @@ export async function deleteArticle(id: string) {
   await requireAdmin();
   await prisma.article.delete({ where: { id } });
   revalidatePath("/admin/articles");
+  revalidatePath("/admin", "layout");
   revalidatePath("/");
 }
