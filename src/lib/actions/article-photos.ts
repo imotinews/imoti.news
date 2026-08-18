@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { uploadImage, deleteImage } from "@/lib/images/store";
+import { deleteImage } from "@/lib/images/store";
 
 async function requireAdmin() {
   const session = await auth();
@@ -18,11 +18,12 @@ async function revalidateArticle(articleId: string) {
   if (article) revalidatePath(`/statia/${article.slug}`);
 }
 
-export async function uploadArticlePhotos(articleId: string, formData: FormData) {
+// The actual file bytes are uploaded straight from the browser to Blob
+// storage (see BlobUploadInput) -- this only persists the resulting URLs,
+// so the request stays tiny regardless of how many/how large the photos are.
+export async function createArticlePhotosFromUrls(articleId: string, urls: string[]) {
   await requireAdmin();
-
-  const files = formData.getAll("photoFiles").filter((f): f is File => f instanceof File && f.size > 0);
-  if (files.length === 0) return;
+  if (urls.length === 0) return;
 
   const last = await prisma.articlePhoto.findFirst({
     where: { articleId },
@@ -30,10 +31,7 @@ export async function uploadArticlePhotos(articleId: string, formData: FormData)
   });
   let nextOrder = (last?.order ?? -1) + 1;
 
-  for (const file of files) {
-    if (!file.type.startsWith("image/")) continue;
-    const bytes = Buffer.from(await file.arrayBuffer());
-    const url = await uploadImage({ bytes, contentType: file.type }, `${articleId}-gallery`);
+  for (const url of urls) {
     await prisma.articlePhoto.create({ data: { articleId, imageUrl: url, order: nextOrder } });
     nextOrder += 1;
   }

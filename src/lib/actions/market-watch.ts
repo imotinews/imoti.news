@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { uploadImage, deleteImage } from "@/lib/images/store";
+import { deleteImage } from "@/lib/images/store";
 
 const MAX_STATS = 5;
 
@@ -44,26 +44,35 @@ export async function updateMarketWatch(formData: FormData) {
     stats.push({ label, value, changePct: Number.isFinite(changePct) ? changePct : null });
   }
 
-  const removeImage = formData.get("removeImage") === "on";
-  const file = formData.get("imageFile");
-  let imageUrl = current.imageUrl;
-
-  if (removeImage && imageUrl) {
-    await deleteImage(imageUrl);
-    imageUrl = null;
-  } else if (file instanceof File && file.size > 0 && file.type.startsWith("image/")) {
-    const bytes = Buffer.from(await file.arrayBuffer());
-    const newUrl = await uploadImage({ bytes, contentType: file.type }, "market-watch");
-    if (imageUrl) await deleteImage(imageUrl);
-    imageUrl = newUrl;
-  }
-
   await prisma.marketWatch.update({
     where: { id: current.id },
-    data: { summary, stats, imageUrl },
+    data: { summary, stats },
   });
 
   revalidatePath("/admin/market-watch");
   revalidatePath("/");
   redirect("/admin/market-watch");
+}
+
+// The screenshot uploads straight from the browser to Blob storage
+// (bypassing Vercel's ~4.5MB serverless request-body cap) -- this just
+// records the resulting URL.
+export async function setMarketWatchImageFromUpload(url: string) {
+  await requireAdmin();
+  const current = await getOrCreateMarketWatch();
+  if (current.imageUrl) await deleteImage(current.imageUrl);
+  await prisma.marketWatch.update({ where: { id: current.id }, data: { imageUrl: url } });
+  revalidatePath("/admin/market-watch");
+  revalidatePath("/");
+}
+
+export async function removeMarketWatchImage() {
+  await requireAdmin();
+  const current = await getOrCreateMarketWatch();
+  if (current.imageUrl) {
+    await deleteImage(current.imageUrl);
+    await prisma.marketWatch.update({ where: { id: current.id }, data: { imageUrl: null } });
+  }
+  revalidatePath("/admin/market-watch");
+  revalidatePath("/");
 }

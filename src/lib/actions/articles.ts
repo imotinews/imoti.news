@@ -157,26 +157,12 @@ export async function setArticleImageFromStock(id: string, stockImageUrl: string
 
 export type ImageActionState = { status: "idle" | "success" | "error"; message?: string };
 
-export async function uploadArticleImage(
-  id: string,
-  _prevState: ImageActionState,
-  formData: FormData
-): Promise<ImageActionState> {
+// The file itself is uploaded directly from the browser to Blob storage
+// (bypassing Vercel's ~4.5MB serverless request-body cap) -- this just
+// records the resulting URL against the article.
+export async function setArticleImageFromUpload(id: string, url: string) {
   await requireAdmin();
-
-  const file = formData.get("imageFile");
-  if (!(file instanceof File) || file.size === 0) {
-    return { status: "error", message: "Моля, избери файл." };
-  }
-  if (!file.type.startsWith("image/")) {
-    return { status: "error", message: "Файлът трябва да е изображение." };
-  }
-
-  const bytes = Buffer.from(await file.arrayBuffer());
-  const url = await uploadImage({ bytes, contentType: file.type }, id);
   await replaceArticleImage(id, url);
-
-  return { status: "success" };
 }
 
 export async function setArticleImageFromUrl(

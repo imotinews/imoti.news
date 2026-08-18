@@ -1,9 +1,10 @@
 import {
-  uploadArticlePhotos,
+  createArticlePhotosFromUrls,
   deleteArticlePhoto,
   updateArticlePhotoCaption,
   moveArticlePhoto,
 } from "@/lib/actions/article-photos";
+import BlobUploadInput from "@/components/admin/BlobUploadInput";
 
 type Photo = { id: string; imageUrl: string; caption: string | null };
 
@@ -21,26 +22,15 @@ export default function ArticleGalleryPanel({
         Няколко снимки към тази статия — показват се като лента под текста на живия сайт.
       </p>
 
-      <form
-        action={uploadArticlePhotos.bind(null, articleId)}
-        encType="multipart/form-data"
-        className="mt-3 flex items-end gap-3"
-      >
-        <input
-          name="photoFiles"
-          type="file"
-          accept="image/*"
+      <div className="mt-3">
+        <BlobUploadInput
           multiple
-          required
-          className="block text-sm text-foreground"
+          onUploaded={async (urls) => {
+            "use server";
+            await createArticlePhotosFromUrls(articleId, urls);
+          }}
         />
-        <button
-          type="submit"
-          className="shrink-0 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
-        >
-          Качи
-        </button>
-      </form>
+      </div>
 
       {photos.length > 0 && (
         <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

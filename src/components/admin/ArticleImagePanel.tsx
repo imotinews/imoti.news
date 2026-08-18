@@ -1,14 +1,15 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useActionState } from "react";
 import {
-  uploadArticleImage,
+  setArticleImageFromUpload,
   setArticleImageFromUrl,
   generateArticleImage,
   removeArticleImage,
   setArticleImageFromStock,
   type ImageActionState,
 } from "@/lib/actions/articles";
+import BlobUploadInput from "@/components/admin/BlobUploadInput";
 
 const initialState: ImageActionState = { status: "idle" };
 
@@ -21,15 +22,11 @@ export default function ArticleImagePanel({
   imageUrl: string | null;
   stockPhotos?: { id: string; imageUrl: string }[];
 }) {
-  const uploadAction = uploadArticleImage.bind(null, articleId);
   const urlAction = setArticleImageFromUrl.bind(null, articleId);
   const generateAction = generateArticleImage.bind(null, articleId);
 
-  const [uploadState, uploadFormAction, uploadPending] = useActionState(uploadAction, initialState);
   const [urlState, urlFormAction, urlPending] = useActionState(urlAction, initialState);
   const [genState, genFormAction, genPending] = useActionState(generateAction, initialState);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="rounded-lg border border-border bg-background p-4">
@@ -48,31 +45,17 @@ export default function ArticleImagePanel({
       )}
 
       <div className="mt-4 space-y-4 border-t border-border pt-4">
-        <form
-          action={(formData) => {
-            uploadFormAction(formData);
-            if (fileInputRef.current) fileInputRef.current.value = "";
-          }}
-        >
+        <div>
           <label className="block text-xs font-medium text-foreground">Качи от компютъра</label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            name="imageFile"
-            accept="image/*"
-            className="mt-1.5 block w-full text-xs text-muted-foreground file:mr-2 file:rounded-md file:border file:border-border file:bg-muted file:px-2 file:py-1 file:text-xs"
-          />
-          <button
-            type="submit"
-            disabled={uploadPending}
-            className="mt-2 w-full rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-60"
-          >
-            {uploadPending ? "Качва се..." : "Качи"}
-          </button>
-          {uploadState.status === "error" && (
-            <p className="mt-1 text-xs text-red-600">{uploadState.message}</p>
-          )}
-        </form>
+          <div className="mt-1.5">
+            <BlobUploadInput
+              onUploaded={async (urls) => {
+                await setArticleImageFromUpload(articleId, urls[0]);
+              }}
+              className="block w-full text-xs text-muted-foreground file:mr-2 file:rounded-md file:border file:border-border file:bg-muted file:px-2 file:py-1 file:text-xs"
+            />
+          </div>
+        </div>
 
         <form action={urlFormAction}>
           <label htmlFor="sourceUrl" className="block text-xs font-medium text-foreground">

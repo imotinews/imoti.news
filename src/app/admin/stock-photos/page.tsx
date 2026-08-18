@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { uploadStockPhotos, deleteStockPhoto } from "@/lib/actions/stock-photos";
+import { createStockPhotosFromUrls, deleteStockPhoto } from "@/lib/actions/stock-photos";
+import BlobUploadInput from "@/components/admin/BlobUploadInput";
 
 export default async function AdminStockPhotosPage() {
   const photos = await prisma.stockPhoto.findMany({ orderBy: { createdAt: "desc" } });
@@ -12,32 +13,18 @@ export default async function AdminStockPhotosPage() {
         статия, когато няма изрично качена такава (напр. докато AI генерирането не е достъпно).
       </p>
 
-      <form
-        action={uploadStockPhotos}
-        encType="multipart/form-data"
-        className="mt-6 flex items-end gap-3"
-      >
-        <div>
-          <label htmlFor="imageFiles" className="block text-sm font-medium text-foreground">
-            Качи снимки
-          </label>
-          <input
-            id="imageFiles"
-            name="imageFiles"
-            type="file"
-            accept="image/*"
+      <div className="mt-6">
+        <label className="block text-sm font-medium text-foreground">Качи снимки</label>
+        <div className="mt-1.5">
+          <BlobUploadInput
             multiple
-            required
-            className="mt-1.5 block text-sm text-foreground"
+            onUploaded={async (urls) => {
+              "use server";
+              await createStockPhotosFromUrls(urls);
+            }}
           />
         </div>
-        <button
-          type="submit"
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
-        >
-          Качи
-        </button>
-      </form>
+      </div>
 
       {photos.length === 0 ? (
         <p className="mt-8 text-sm text-muted-foreground">Няма качени снимки още.</p>

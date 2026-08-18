@@ -1,4 +1,11 @@
-import { getMarketWatch, updateMarketWatch, type MarketWatchStat } from "@/lib/actions/market-watch";
+import {
+  getMarketWatch,
+  updateMarketWatch,
+  setMarketWatchImageFromUpload,
+  removeMarketWatchImage,
+  type MarketWatchStat,
+} from "@/lib/actions/market-watch";
+import BlobUploadInput from "@/components/admin/BlobUploadInput";
 
 const MAX_STATS = 5;
 
@@ -16,7 +23,7 @@ export default async function AdminMarketWatchPage() {
         {marketWatch.updatedAt.toLocaleString("bg-BG")}.
       </p>
 
-      <form action={updateMarketWatch} encType="multipart/form-data" className="mt-6 max-w-2xl space-y-6">
+      <form action={updateMarketWatch} className="mt-6 max-w-2xl space-y-6">
         <div>
           <label htmlFor="summary" className="block text-sm font-medium text-foreground">
             Анализ
@@ -62,33 +69,6 @@ export default async function AdminMarketWatchPage() {
           </div>
         </div>
 
-        <div>
-          <label htmlFor="imageFile" className="block text-sm font-medium text-foreground">
-            Илюстративна снимка (по желание, само за показ)
-          </label>
-          {marketWatch.imageUrl && (
-            <div className="mt-2 flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={marketWatch.imageUrl}
-                alt="Market Watch"
-                className="h-20 w-32 rounded-md border border-border object-cover"
-              />
-              <label className="flex items-center gap-2 text-sm text-foreground">
-                <input type="checkbox" name="removeImage" className="h-4 w-4" />
-                Премахни снимката
-              </label>
-            </div>
-          )}
-          <input
-            id="imageFile"
-            name="imageFile"
-            type="file"
-            accept="image/*"
-            className="mt-2 block w-full text-sm text-foreground"
-          />
-        </div>
-
         <button
           type="submit"
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
@@ -96,6 +76,35 @@ export default async function AdminMarketWatchPage() {
           Запази
         </button>
       </form>
+
+      <div className="mt-6 max-w-2xl">
+        <label className="block text-sm font-medium text-foreground">
+          Илюстративна снимка (по желание, само за показ)
+        </label>
+        {marketWatch.imageUrl && (
+          <div className="mt-2 flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={marketWatch.imageUrl}
+              alt="Market Watch"
+              className="h-20 w-32 rounded-md border border-border object-cover"
+            />
+            <form action={removeMarketWatchImage}>
+              <button type="submit" className="text-xs text-red-600 hover:underline">
+                Премахни снимката
+              </button>
+            </form>
+          </div>
+        )}
+        <div className="mt-2">
+          <BlobUploadInput
+            onUploaded={async (urls) => {
+              "use server";
+              await setMarketWatchImageFromUpload(urls[0]);
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

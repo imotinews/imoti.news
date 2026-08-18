@@ -1,10 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { uploadImage, deleteImage } from "@/lib/images/store";
+import { deleteImage } from "@/lib/images/store";
 
 async function requireAdmin() {
   const session = await auth();
@@ -13,20 +12,15 @@ async function requireAdmin() {
   }
 }
 
-export async function uploadStockPhotos(formData: FormData) {
+// Files upload straight from the browser to Blob storage -- this only
+// persists the resulting URLs, keeping the request tiny no matter how
+// many photos are selected at once.
+export async function createStockPhotosFromUrls(urls: string[]) {
   await requireAdmin();
-
-  const files = formData.getAll("imageFiles").filter((f): f is File => f instanceof File && f.size > 0);
-
-  for (const file of files) {
-    if (!file.type.startsWith("image/")) continue;
-    const bytes = Buffer.from(await file.arrayBuffer());
-    const url = await uploadImage({ bytes, contentType: file.type }, "stock");
+  for (const url of urls) {
     await prisma.stockPhoto.create({ data: { imageUrl: url } });
   }
-
   revalidatePath("/admin/stock-photos");
-  redirect("/admin/stock-photos");
 }
 
 export async function deleteStockPhoto(id: string) {
