@@ -10,6 +10,7 @@ const STATUS_LABEL: Record<string, string> = {
   created: "нова статия",
   irrelevant: "нерелевантно",
   similar_duplicate: "прилича на друга",
+  too_old: "твърде стара",
   error: "грешка",
 };
 
@@ -17,6 +18,7 @@ const STATUS_CLASS: Record<string, string> = {
   created: "bg-primary/10 text-primary",
   irrelevant: "bg-muted text-muted-foreground",
   similar_duplicate: "bg-muted text-muted-foreground",
+  too_old: "bg-muted text-muted-foreground",
   error: "bg-red-100 text-red-700",
 };
 
@@ -131,7 +133,7 @@ export default async function AdminSourcesPage({
                         {" · последни "}
                         {STATS_WINDOW_DAYS}
                         {"дни: "}
-                        {stats.created ?? 0} нови, {stats.error ?? 0} грешки
+                        {stats.created ?? 0} нови, {stats.error ?? 0} грешки, {stats.too_old ?? 0} стари
                       </div>
                     </div>
                   ) : (

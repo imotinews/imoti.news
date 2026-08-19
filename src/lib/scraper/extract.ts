@@ -28,8 +28,11 @@ export async function extractArticleText(pageUrl: string): Promise<ExtractedArti
     return null;
   }
 
+  const publishedAt = parsed.publishedTime ? new Date(parsed.publishedTime) : null;
+
   return {
     title: parsed.title?.trim() || "",
     text,
+    publishedAt: publishedAt && !Number.isNaN(publishedAt.getTime()) ? publishedAt : null,
   };
 }

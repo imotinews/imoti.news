@@ -8,6 +8,7 @@ export type FeedItem = {
 export type ExtractedArticle = {
   title: string;
   text: string;
+  publishedAt: Date | null;
 };
 
 export type ClassifyResult =
@@ -28,5 +29,6 @@ export type ScraperRunResult = {
   skippedIrrelevant: number;
   skippedDuplicate: number;
   skippedSimilar: number;
+  skippedTooOld: number;
   errors: string[];
 };

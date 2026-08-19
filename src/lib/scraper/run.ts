@@ -11,6 +11,11 @@ import type { ScraperRunResult } from "./types";
 const MAX_ITEMS_PER_SOURCE = 8;
 const RECENT_TITLES_WINDOW_DAYS = 5;
 
+// This is a news site -- an item published months ago (some listing pages
+// mix in old/evergreen articles with no date of their own) shouldn't be
+// scraped as if it were today's news.
+const MAX_ARTICLE_AGE_DAYS = 3;
+
 // Gemini's free tier caps at 15 requests/minute for gemini-3.5-flash-lite.
 // Spacing calls out avoids burning through the quota mid-run.
 const AI_CALL_DELAY_MS = 4500;
@@ -21,6 +26,11 @@ function isUniqueConstraintError(error: unknown): boolean {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTooOld(date: Date | null): boolean {
+  if (!date || Number.isNaN(date.getTime())) return false;
+  return Date.now() - date.getTime() > MAX_ARTICLE_AGE_DAYS * 24 * 60 * 60 * 1000;
 }
 
 export async function runScraper(): Promise<ScraperRunResult[]> {
@@ -45,6 +55,7 @@ export async function runScraper(): Promise<ScraperRunResult[]> {
       skippedIrrelevant: 0,
       skippedDuplicate: 0,
       skippedSimilar: 0,
+      skippedTooOld: 0,
       errors: [],
     };
 
@@ -80,6 +91,18 @@ export async function runScraper(): Promise<ScraperRunResult[]> {
         }
 
         try {
+          if (isTooOld(item.publishedAt)) {
+            result.skippedTooOld += 1;
+            await prisma.scrapedUrl.update({
+              where: { id: claimId },
+              data: {
+                status: "too_old",
+                errorMessage: `Публикувана на ${item.publishedAt?.toISOString().slice(0, 10)}`,
+              },
+            });
+            continue;
+          }
+
           const similarTitle = findSimilarTitle(item.title, recentTitles);
           if (similarTitle) {
             result.skippedSimilar += 1;
@@ -97,6 +120,21 @@ export async function runScraper(): Promise<ScraperRunResult[]> {
             await prisma.scrapedUrl.update({
               where: { id: claimId },
               data: { status: "error", errorMessage: message },
+            });
+            continue;
+          }
+
+          // Listing-scraped sources (as opposed to RSS) have no date of
+          // their own -- fall back to whatever the article page's metadata
+          // says, since that's the only freshness signal we have for them.
+          if (!item.publishedAt && isTooOld(extracted.publishedAt)) {
+            result.skippedTooOld += 1;
+            await prisma.scrapedUrl.update({
+              where: { id: claimId },
+              data: {
+                status: "too_old",
+                errorMessage: `Публикувана на ${extracted.publishedAt?.toISOString().slice(0, 10)}`,
+              },
             });
             continue;
           }

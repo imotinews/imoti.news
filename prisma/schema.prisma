@@ -26,6 +26,7 @@ enum ScrapeStatus {
   created
   irrelevant
   similar_duplicate
+  too_old
   error
 }
 
