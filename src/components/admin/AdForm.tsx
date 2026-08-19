@@ -1,3 +1,8 @@
+"use client";
+
+import { useState } from "react";
+import BlobUploadInput from "@/components/admin/BlobUploadInput";
+
 export type AdFormValues = {
   name: string;
   position: "header" | "sidebar" | "in_article" | "footer";
@@ -28,6 +33,8 @@ export default function AdForm({
   action: (formData: FormData) => void;
   defaultValues?: Partial<AdFormValues>;
 }) {
+  const [imageUrl, setImageUrl] = useState(defaultValues?.imageUrl ?? "");
+
   return (
     <form action={action} className="flex max-w-2xl flex-col gap-4">
       <div>
@@ -63,14 +70,34 @@ export default function AdForm({
       </div>
 
       <div>
-        <label htmlFor="imageUrl" className="mb-1 block text-sm font-medium text-foreground">
-          Линк към изображение
+        <label className="mb-1 block text-sm font-medium text-foreground">
+          Изображение на банера
+        </label>
+
+        {imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageUrl}
+            alt=""
+            className="mb-2 h-16 rounded-md border border-border object-contain"
+          />
+        )}
+
+        <BlobUploadInput
+          onUploaded={async (urls) => {
+            setImageUrl(urls[0]);
+          }}
+        />
+
+        <label htmlFor="imageUrl" className="mb-1 mt-3 block text-xs text-muted-foreground">
+          или постави линк директно
         </label>
         <input
           id="imageUrl"
           name="imageUrl"
           type="url"
-          defaultValue={defaultValues?.imageUrl ?? ""}
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
           className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
         />
       </div>
