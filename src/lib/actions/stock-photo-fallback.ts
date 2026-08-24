@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { searchUnsplashPhoto, triggerUnsplashDownload, isUnsplashConfigured } from "@/lib/images/unsplash";
+import { deriveArticleImageKeywords } from "@/lib/images/article-keywords";
 
 // How many of a category's most recent Unsplash picks to avoid repeating --
 // there's no local pool to round-robin through like stock photos, so this
@@ -23,18 +24,28 @@ async function assignStockPhoto(articleId: string, categoryId: string): Promise<
   return true;
 }
 
-async function assignUnsplashPhoto(articleId: string, categoryId: string, keywords: string): Promise<boolean> {
+async function assignUnsplashPhoto(
+  articleId: string,
+  categoryId: string,
+  categoryKeywords: string,
+  title: string,
+  excerpt: string | null
+): Promise<boolean> {
   const recent = await prisma.unsplashUsage.findMany({
     where: { categoryId },
     orderBy: { usedAt: "desc" },
     take: UNSPLASH_HISTORY_SIZE,
     select: { unsplashId: true },
   });
+  const excludeIds = recent.map((r) => r.unsplashId);
 
-  const photo = await searchUnsplashPhoto(
-    keywords,
-    recent.map((r) => r.unsplashId)
-  );
+  // Try the article's own subject first (a city, a building type, whatever
+  // it's actually about) -- only fall back to the category's generic
+  // keywords if that search comes up empty.
+  const articleKeywords = await deriveArticleImageKeywords(title, excerpt);
+  const photo =
+    (articleKeywords ? await searchUnsplashPhoto(articleKeywords, excludeIds) : null) ??
+    (await searchUnsplashPhoto(categoryKeywords, excludeIds));
   if (!photo) return false;
 
   await prisma.article.update({
@@ -62,6 +73,8 @@ export async function applyCategoryStockPhotoFallback(articleId: string) {
   const article = await prisma.article.findUnique({
     where: { id: articleId },
     select: {
+      title: true,
+      excerpt: true,
       imageUrl: true,
       categoryId: true,
       _count: { select: { photos: true } },
@@ -77,7 +90,13 @@ export async function applyCategoryStockPhotoFallback(articleId: string) {
   if (gotStockPhoto) return;
 
   if (isUnsplashConfigured() && article.category?.unsplashKeywords) {
-    await assignUnsplashPhoto(articleId, article.categoryId, article.category.unsplashKeywords);
+    await assignUnsplashPhoto(
+      articleId,
+      article.categoryId,
+      article.category.unsplashKeywords,
+      article.title,
+      article.excerpt
+    );
   }
 }
 
