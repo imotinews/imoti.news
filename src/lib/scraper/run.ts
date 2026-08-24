@@ -33,9 +33,25 @@ function isTooOld(date: Date | null): boolean {
   return Date.now() - date.getTime() > MAX_ARTICLE_AGE_DAYS * 24 * 60 * 60 * 1000;
 }
 
-export async function runScraper(): Promise<ScraperRunResult[]> {
+async function touchRun(runId: string | undefined, data: Record<string, unknown>) {
+  if (!runId) return;
+  await prisma.scrapeRun.update({ where: { id: runId }, data }).catch(() => {});
+}
+
+export async function runScraper(runId?: string): Promise<ScraperRunResult[]> {
+  try {
+    return await runScraperInner(runId);
+  } catch (error) {
+    await touchRun(runId, { status: "failed", finishedAt: new Date() });
+    throw error;
+  }
+}
+
+async function runScraperInner(runId?: string): Promise<ScraperRunResult[]> {
   const sources = await prisma.source.findMany({ where: { active: true } });
   const results: ScraperRunResult[] = [];
+
+  await touchRun(runId, { totalSources: sources.length });
 
   const windowStart = new Date(Date.now() - RECENT_TITLES_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   const recentArticles = await prisma.article.findMany({
@@ -47,6 +63,8 @@ export async function runScraper(): Promise<ScraperRunResult[]> {
   const recentTitles = recentArticles.map((a) => a.title);
 
   for (const source of sources) {
+    await touchRun(runId, { currentSourceName: source.name });
+
     const result: ScraperRunResult = {
       sourceId: source.id,
       sourceName: source.name,
@@ -199,8 +217,23 @@ export async function runScraper(): Promise<ScraperRunResult[]> {
       console.error(`[scraper] source error (${source.name}):`, sourceError);
     }
 
+    // Always stamped, whether or not anything new was found -- otherwise a
+    // healthy source whose feed has no new items ever looks untouched, since
+    // the admin UI's "last attempt" used to be derived only from newly
+    // created scraped_urls rows.
+    await prisma.source.update({ where: { id: source.id }, data: { lastCheckedAt: new Date() } }).catch(() => {});
+
+    await touchRun(runId, {
+      sourcesDone: { increment: 1 },
+      itemsSeen: { increment: result.itemsSeen },
+      created: { increment: result.created },
+      errors: { increment: result.errors.length },
+    });
+
     results.push(result);
   }
+
+  await touchRun(runId, { status: "completed", finishedAt: new Date(), currentSourceName: null });
 
   return results;
 }

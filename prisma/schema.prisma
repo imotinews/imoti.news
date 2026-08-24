@@ -42,6 +42,12 @@ enum AdminRole {
   editor
 }
 
+enum ScrapeRunStatus {
+  running
+  completed
+  failed
+}
+
 model Category {
   id          String       @id @default(cuid())
   name        String
@@ -69,16 +75,32 @@ model SocialLinks {
 }
 
 model Source {
-  id          String            @id @default(cuid())
-  name        String
-  url         String
-  type        SourceType
-  contentType SourceContentType @default(real_estate) @map("content_type")
-  active      Boolean           @default(true)
-  articles    Article[]
-  scrapedUrls ScrapedUrl[]
+  id            String            @id @default(cuid())
+  name          String
+  url           String
+  type          SourceType
+  contentType   SourceContentType @default(real_estate) @map("content_type")
+  active        Boolean           @default(true)
+  lastCheckedAt DateTime?         @map("last_checked_at")
+  articles      Article[]
+  scrapedUrls   ScrapedUrl[]
 
   @@map("sources")
+}
+
+model ScrapeRun {
+  id                String          @id @default(cuid())
+  status            ScrapeRunStatus @default(running)
+  startedAt         DateTime        @default(now()) @map("started_at")
+  finishedAt        DateTime?       @map("finished_at")
+  totalSources      Int             @map("total_sources")
+  sourcesDone       Int             @default(0) @map("sources_done")
+  currentSourceName String?         @map("current_source_name")
+  itemsSeen         Int             @default(0) @map("items_seen")
+  created           Int             @default(0)
+  errors            Int             @default(0)
+
+  @@map("scrape_runs")
 }
 
 model Article {

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { deleteSource } from "@/lib/actions/sources";
 import { runScraperNow } from "@/lib/actions/scraper";
 import ScrapeButton from "@/components/admin/ScrapeButton";
+import ScrapeProgressPanel from "@/components/admin/ScrapeProgressPanel";
 
 const STATS_WINDOW_DAYS = 3;
 
@@ -22,13 +23,11 @@ const STATUS_CLASS: Record<string, string> = {
   error: "bg-red-100 text-red-700",
 };
 
-export default async function AdminSourcesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ started?: string }>;
-}) {
-  const params = await searchParams;
-  const sources = await prisma.source.findMany({ orderBy: { name: "asc" } });
+export default async function AdminSourcesPage() {
+  const [sources, latestRun] = await Promise.all([
+    prisma.source.findMany({ orderBy: { name: "asc" } }),
+    prisma.scrapeRun.findFirst({ orderBy: { startedAt: "desc" } }),
+  ]);
 
   const windowStart = new Date(Date.now() - STATS_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   const sourceIds = sources.map((s) => s.id);
@@ -74,15 +73,7 @@ export default async function AdminSourcesPage({
         </div>
       </div>
 
-      {params.started === "1" && (
-        <div className="mt-4 rounded-md border border-border bg-muted p-4 text-sm text-foreground">
-          Скрейпването върви на заден план — може да отнеме няколко минути. Резултатите ще се
-          появят по-долу във всеки източник; презареди страницата след малко, за да ги видиш.{" "}
-          <Link href="/admin/sources" className="text-primary hover:underline">
-            Презареди сега →
-          </Link>
-        </div>
-      )}
+      <ScrapeProgressPanel initialRun={latestRun} />
 
       <div className="mt-6 overflow-x-auto rounded-lg border border-border bg-background">
         <table className="w-full text-left text-sm">
@@ -90,7 +81,7 @@ export default async function AdminSourcesPage({
             <tr>
               <th className="px-4 py-3 font-medium">Име</th>
               <th className="px-4 py-3 font-medium">Тип</th>
-              <th className="px-4 py-3 font-medium">Последен опит</th>
+              <th className="px-4 py-3 font-medium">Последна проверка</th>
               <th className="px-4 py-3 font-medium">Активен</th>
               <th className="px-4 py-3 font-medium"></th>
             </tr>
@@ -120,24 +111,26 @@ export default async function AdminSourcesPage({
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  {lastAttempt ? (
+                  {source.lastCheckedAt ? (
                     <div>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[lastAttempt.status] ?? "bg-muted text-muted-foreground"}`}
-                        title={lastAttempt.errorMessage ?? undefined}
-                      >
-                        {STATUS_LABEL[lastAttempt.status] ?? lastAttempt.status}
-                      </span>
+                      <div className="text-xs text-foreground">
+                        {source.lastCheckedAt.toLocaleString("bg-BG")}
+                      </div>
+                      {lastAttempt && (
+                        <span
+                          className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[lastAttempt.status] ?? "bg-muted text-muted-foreground"}`}
+                          title={lastAttempt.errorMessage ?? undefined}
+                        >
+                          {STATUS_LABEL[lastAttempt.status] ?? lastAttempt.status}
+                        </span>
+                      )}
                       <div className="mt-1 text-xs text-muted-foreground">
-                        {lastAttempt.createdAt.toLocaleString("bg-BG")}
-                        {" · последни "}
-                        {STATS_WINDOW_DAYS}
-                        {"дни: "}
-                        {stats.created ?? 0} нови, {stats.error ?? 0} грешки, {stats.too_old ?? 0} стари
+                        последни {STATS_WINDOW_DAYS} дни: {stats.created ?? 0} нови, {stats.error ?? 0} грешки,{" "}
+                        {stats.too_old ?? 0} стари
                       </div>
                     </div>
                   ) : (
-                    <span className="text-xs text-muted-foreground">Няма опити още</span>
+                    <span className="text-xs text-muted-foreground">Няма проверки още</span>
                   )}
                 </td>
                 <td className="px-4 py-3">
