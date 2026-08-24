@@ -4,8 +4,10 @@ import type { Metadata } from "next";
 import Container from "@/components/layout/Container";
 import AdSlotContainer from "@/components/ads/AdSlotContainer";
 import NewsletterForm from "@/components/layout/NewsletterForm";
+import ArticleImage from "@/components/articles/ArticleImage";
 import { getPublishedBySlug } from "@/lib/queries";
 import { siteUrl } from "@/lib/newsletter/resend-client";
+import { UNSPLASH_HOME_URL } from "@/lib/images/unsplash";
 
 function formatDate(date: Date | null) {
   if (!date) return "";
@@ -108,6 +110,31 @@ export default async function ArticlePage({
           <p className="mt-3 text-xs text-muted-foreground">
             {formatDate(article.publishedAt)}
           </p>
+
+          {article.imageUrl && (
+            <div className="mt-5">
+              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg">
+                <ArticleImage src={article.imageUrl} alt={article.title} sizes="(min-width: 1024px) 66vw, 100vw" />
+              </div>
+              {article.imageAttributionName && article.imageAttributionUrl && (
+                <p className="mt-1.5 text-right text-[11px] text-muted-foreground">
+                  Photo by{" "}
+                  <a
+                    href={article.imageAttributionUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    {article.imageAttributionName}
+                  </a>{" "}
+                  on{" "}
+                  <a href={UNSPLASH_HOME_URL} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                    Unsplash
+                  </a>
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="mt-6 space-y-4 text-base leading-7 text-foreground">
             {firstHalf.map((paragraph, i) => (

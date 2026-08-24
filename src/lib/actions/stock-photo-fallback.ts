@@ -1,30 +1,84 @@
 import { prisma } from "@/lib/prisma";
+import { searchUnsplashPhoto, triggerUnsplashDownload, isUnsplashConfigured } from "@/lib/images/unsplash";
+
+// How many of a category's most recent Unsplash picks to avoid repeating --
+// there's no local pool to round-robin through like stock photos, so this
+// is the only thing keeping a fresh search from returning the same photo.
+const UNSPLASH_HISTORY_SIZE = 15;
+
+async function assignStockPhoto(articleId: string, categoryId: string): Promise<boolean> {
+  const photo = await prisma.stockPhoto.findFirst({
+    where: { categoryId },
+    orderBy: { lastUsedAt: { sort: "asc", nulls: "first" } },
+  });
+  if (!photo) return false;
+
+  await prisma.$transaction([
+    prisma.article.update({
+      where: { id: articleId },
+      data: { imageUrl: photo.imageUrl, imageAttributionName: null, imageAttributionUrl: null },
+    }),
+    prisma.stockPhoto.update({ where: { id: photo.id }, data: { lastUsedAt: new Date() } }),
+  ]);
+  return true;
+}
+
+async function assignUnsplashPhoto(articleId: string, categoryId: string, keywords: string): Promise<boolean> {
+  const recent = await prisma.unsplashUsage.findMany({
+    where: { categoryId },
+    orderBy: { usedAt: "desc" },
+    take: UNSPLASH_HISTORY_SIZE,
+    select: { unsplashId: true },
+  });
+
+  const photo = await searchUnsplashPhoto(
+    keywords,
+    recent.map((r) => r.unsplashId)
+  );
+  if (!photo) return false;
+
+  await prisma.article.update({
+    where: { id: articleId },
+    data: {
+      imageUrl: photo.url,
+      imageAttributionName: photo.photographerName,
+      imageAttributionUrl: photo.photographerUrl,
+    },
+  });
+  await prisma.unsplashUsage.create({ data: { categoryId, unsplashId: photo.id } });
+
+  // Fire-and-forget -- required by Unsplash's guidelines, but must never
+  // block or fail the article update that already succeeded above.
+  triggerUnsplashDownload(photo.downloadLocation).catch(() => {});
+
+  return true;
+}
 
 // Called only at publish time (not on draft save) so there's still a
-// window to add a real photo first. Picks the least-recently-used stock
-// photo in the article's category -- never-used photos (lastUsedAt null)
-// sort first, so a fresh batch cycles through evenly before repeating.
+// window to add a real photo first. Priority: her own uploaded stock
+// photos first (curated on purpose), Unsplash only fills the gap when
+// nothing local exists yet for that category.
 export async function applyCategoryStockPhotoFallback(articleId: string) {
   const article = await prisma.article.findUnique({
     where: { id: articleId },
-    select: { imageUrl: true, categoryId: true, _count: { select: { photos: true } } },
+    select: {
+      imageUrl: true,
+      categoryId: true,
+      _count: { select: { photos: true } },
+      category: { select: { unsplashKeywords: true } },
+    },
   });
 
   if (!article || article.imageUrl || article._count.photos > 0 || !article.categoryId) {
     return;
   }
 
-  const photo = await prisma.stockPhoto.findFirst({
-    where: { categoryId: article.categoryId },
-    orderBy: { lastUsedAt: { sort: "asc", nulls: "first" } },
-  });
+  const gotStockPhoto = await assignStockPhoto(articleId, article.categoryId);
+  if (gotStockPhoto) return;
 
-  if (!photo) return;
-
-  await prisma.$transaction([
-    prisma.article.update({ where: { id: articleId }, data: { imageUrl: photo.imageUrl } }),
-    prisma.stockPhoto.update({ where: { id: photo.id }, data: { lastUsedAt: new Date() } }),
-  ]);
+  if (isUnsplashConfigured() && article.category?.unsplashKeywords) {
+    await assignUnsplashPhoto(articleId, article.categoryId, article.category.unsplashKeywords);
+  }
 }
 
 // Bulk backfill for existing articles that never got a cover image (e.g.

@@ -49,14 +49,27 @@ enum ScrapeRunStatus {
 }
 
 model Category {
-  id          String       @id @default(cuid())
-  name        String
-  slug        String       @unique
-  scrapable   Boolean      @default(true)
-  articles    Article[]
-  stockPhotos StockPhoto[]
+  id               String          @id @default(cuid())
+  name             String
+  slug             String          @unique
+  scrapable        Boolean         @default(true)
+  unsplashKeywords String?         @map("unsplash_keywords")
+  articles         Article[]
+  stockPhotos      StockPhoto[]
+  unsplashUsage    UnsplashUsage[]
 
   @@map("categories")
+}
+
+model UnsplashUsage {
+  id         String   @id @default(cuid())
+  categoryId String   @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  unsplashId String   @map("unsplash_id")
+  usedAt     DateTime @default(now()) @map("used_at")
+
+  @@index([categoryId, usedAt])
+  @@map("unsplash_usage")
 }
 
 model SocialLinks {
@@ -109,6 +122,8 @@ model Article {
   title             String
   excerpt           String?
   imageUrl          String?       @map("image_url")
+  imageAttributionName String?    @map("image_attribution_name")
+  imageAttributionUrl  String?    @map("image_attribution_url")
   rewrittenContent  String        @map("rewritten_content")
   originalUrl       String        @map("original_url")
   sourceName        String        @map("source_name")

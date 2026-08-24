@@ -26,6 +26,7 @@ export async function createCategory(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const slugInput = String(formData.get("slug") ?? "").trim();
   const scrapable = formData.get("scrapable") === "on";
+  const unsplashKeywords = String(formData.get("unsplashKeywords") ?? "").trim() || null;
 
   if (!name) {
     throw new Error("Името е задължително.");
@@ -36,7 +37,7 @@ export async function createCategory(formData: FormData) {
     throw new Error("Не успях да образувам валиден slug от това име.");
   }
 
-  await prisma.category.create({ data: { name, slug, scrapable } });
+  await prisma.category.create({ data: { name, slug, scrapable, unsplashKeywords } });
 
   revalidatePath("/admin/kategorii");
   revalidatePath("/");
@@ -48,12 +49,13 @@ export async function updateCategory(id: string, formData: FormData) {
 
   const name = String(formData.get("name") ?? "").trim();
   const scrapable = formData.get("scrapable") === "on";
+  const unsplashKeywords = String(formData.get("unsplashKeywords") ?? "").trim() || null;
 
   if (!name) {
     throw new Error("Името е задължително.");
   }
 
-  await prisma.category.update({ where: { id }, data: { name, scrapable } });
+  await prisma.category.update({ where: { id }, data: { name, scrapable, unsplashKeywords } });
 
   revalidatePath("/admin/kategorii");
   revalidatePath("/");

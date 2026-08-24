@@ -144,8 +144,11 @@ export async function unpublishArticle(id: string) {
 
 // Stock photos are shared across many articles -- deleting the underlying
 // blob just because one article stopped using it would break every other
-// article still pointing at the same URL. Skip the delete for those.
+// article still pointing at the same URL. Skip the delete for those. Also
+// skip anything not hosted on our own Blob storage (e.g. an Unsplash CDN
+// URL) -- there's nothing of ours to delete, and it isn't a file we own.
 async function deleteArticleImageBlob(url: string) {
+  if (!url.includes(".public.blob.vercel-storage.com")) return;
   const isStock = await prisma.stockPhoto.findFirst({ where: { imageUrl: url }, select: { id: true } });
   if (isStock) return;
   await deleteImage(url);
@@ -154,7 +157,14 @@ async function deleteArticleImageBlob(url: string) {
 async function replaceArticleImage(id: string, newUrl: string) {
   const existing = await prisma.article.findUnique({ where: { id }, select: { imageUrl: true } });
 
-  await prisma.article.update({ where: { id }, data: { imageUrl: newUrl } });
+  // Any manual replacement (upload, URL extract, AI-gen, stock pick) means
+  // this is no longer the Unsplash pick that may have set these -- stale
+  // attribution under someone else's photo would be both wrong and a
+  // guideline violation.
+  await prisma.article.update({
+    where: { id },
+    data: { imageUrl: newUrl, imageAttributionName: null, imageAttributionUrl: null },
+  });
 
   if (existing?.imageUrl) {
     await deleteArticleImageBlob(existing.imageUrl);
@@ -240,7 +250,10 @@ export async function removeArticleImage(id: string) {
   await requireAdmin();
 
   const existing = await prisma.article.findUnique({ where: { id }, select: { imageUrl: true } });
-  await prisma.article.update({ where: { id }, data: { imageUrl: null } });
+  await prisma.article.update({
+    where: { id },
+    data: { imageUrl: null, imageAttributionName: null, imageAttributionUrl: null },
+  });
 
   if (existing?.imageUrl) {
     await deleteArticleImageBlob(existing.imageUrl);

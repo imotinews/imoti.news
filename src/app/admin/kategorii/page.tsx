@@ -13,7 +13,9 @@ export default async function AdminCategoriesPage() {
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
         Категориите се появяват автоматично в менюто, футъра и на сайта. "Разрешена за скрейпъра"
         означава AI-то може само да класифицира статии там при скрейпване — изключи я за
-        категории, предвидени само за ръчно публикуване (напр. Галерии).
+        категории, предвидени само за ръчно публикуване (напр. Галерии). "Unsplash ключови думи"
+        се ползват само като последна опция за снимка на статия — след ръчна снимка и Stock
+        снимки, ако категорията няма нито едно от двете.
       </p>
 
       <div className="mt-6 overflow-x-auto rounded-lg border border-border bg-background">
@@ -39,6 +41,12 @@ export default async function AdminCategoriesPage() {
                       name="name"
                       defaultValue={category.name}
                       className="w-40 rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
+                    />
+                    <input
+                      name="unsplashKeywords"
+                      defaultValue={category.unsplashKeywords ?? ""}
+                      placeholder="Unsplash keywords (en)"
+                      className="w-56 rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
                     />
                     <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <input
@@ -112,6 +120,17 @@ export default async function AdminCategoriesPage() {
               id="slug"
               name="slug"
               placeholder="luksozni-imoti"
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+            />
+          </div>
+          <div>
+            <label htmlFor="unsplashKeywords" className="block text-xs font-medium text-foreground">
+              Unsplash ключови думи (на английски, по желание)
+            </label>
+            <input
+              id="unsplashKeywords"
+              name="unsplashKeywords"
+              placeholder="напр. luxury apartment interior"
               className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
             />
           </div>
