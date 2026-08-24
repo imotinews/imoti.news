@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { deleteStockPhoto } from "@/lib/actions/stock-photos";
 import StockPhotoUploadForm from "@/components/admin/StockPhotoUploadForm";
 import StockPhotoCategoryPicker from "@/components/admin/StockPhotoCategoryPicker";
+import BackfillCoverImagesButton from "@/components/admin/BackfillCoverImagesButton";
 
 export default async function AdminStockPhotosPage() {
   const [photos, categories] = await Promise.all([
@@ -20,6 +21,17 @@ export default async function AdminStockPhotosPage() {
 
       <div className="mt-6">
         <StockPhotoUploadForm categories={categories} />
+      </div>
+
+      <div className="mt-6 rounded-lg border border-border bg-background p-4">
+        <h2 className="text-sm font-semibold text-foreground">Новини без снимка</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Разпределя качените Stock снимки към всички статии, които все още нямат корица, по
+          категория и на ротация.
+        </p>
+        <div className="mt-3">
+          <BackfillCoverImagesButton />
+        </div>
       </div>
 
       {photos.length === 0 ? (

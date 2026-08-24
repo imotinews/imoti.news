@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteImage } from "@/lib/images/store";
+import { backfillMissingCoverImages } from "@/lib/actions/stock-photo-fallback";
 
 async function requireAdmin() {
   const session = await auth();
@@ -21,6 +22,15 @@ export async function createStockPhotosFromUrls(urls: string[], categoryId: stri
     await prisma.stockPhoto.create({ data: { imageUrl: url, categoryId } });
   }
   revalidatePath("/admin/stock-photos");
+}
+
+export async function runStockPhotoBackfill(): Promise<{ assigned: number; skipped: number }> {
+  await requireAdmin();
+  const result = await backfillMissingCoverImages();
+  revalidatePath("/admin/articles");
+  revalidatePath("/admin/stock-photos");
+  revalidatePath("/");
+  return result;
 }
 
 export async function updateStockPhotoCategory(id: string, formData: FormData) {
