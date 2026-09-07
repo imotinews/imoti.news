@@ -5,12 +5,18 @@ import {
   removeMarketWatchImage,
   type MarketWatchStat,
 } from "@/lib/actions/market-watch";
+import { getPriceStatsSummary, getLatestMarketPriceStats, sourceLabel } from "@/lib/actions/price-stats";
 import BlobUploadInput from "@/components/admin/BlobUploadInput";
+import PriceStatsScrapeButton from "@/components/admin/PriceStatsScrapeButton";
 
 const MAX_STATS = 5;
 
 export default async function AdminMarketWatchPage() {
-  const marketWatch = await getMarketWatch();
+  const [marketWatch, priceStatsSummary, priceStatsRows] = await Promise.all([
+    getMarketWatch(),
+    getPriceStatsSummary(),
+    getLatestMarketPriceStats(),
+  ]);
   const stats = (marketWatch.stats as unknown as MarketWatchStat[] | null) ?? [];
   const rows = Array.from({ length: MAX_STATS }, (_, i) => stats[i] ?? { label: "", value: "", changePct: null });
 
@@ -104,6 +110,70 @@ export default async function AdminMarketWatchPage() {
             }}
           />
         </div>
+      </div>
+
+      <div className="mt-10 border-t border-border pt-6">
+        <h2 className="text-lg font-bold tracking-tight text-foreground">Пазарни данни (сурови)</h2>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+          Средни цени по квартали за Пловдив, събирани седмично от Imot.bg, Imoti.net и Alo.bg. Само
+          събиране на данни засега — представянето на живия сайт (Market Watch тайла, графики) е
+          следваща стъпка.
+        </p>
+
+        <div className="mt-4">
+          <PriceStatsScrapeButton />
+        </div>
+
+        {priceStatsSummary.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground">
+            {priceStatsSummary.map((s) => (
+              <div key={s.source} className="rounded-md border border-border px-3 py-2">
+                <div className="font-medium text-foreground">{sourceLabel(s.source)}</div>
+                <div>{s.count} реда общо</div>
+                <div>
+                  последно: {s.lastAsOfDate ? new Date(s.lastAsOfDate).toLocaleDateString("bg-BG") : "—"}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {priceStatsRows.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground">Все още няма събрани данни.</p>
+        ) : (
+          <div className="mt-4 max-h-[600px] overflow-y-auto rounded-lg border border-border">
+            <table className="w-full text-left text-sm">
+              <thead className="sticky top-0 border-b border-border bg-background text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Източник</th>
+                  <th className="px-3 py-2 font-medium">Квартал</th>
+                  <th className="px-3 py-2 font-medium">Тип имот</th>
+                  <th className="px-3 py-2 font-medium">Цена</th>
+                  <th className="px-3 py-2 font-medium">€/кв.м</th>
+                  <th className="px-3 py-2 font-medium">Дата</th>
+                </tr>
+              </thead>
+              <tbody>
+                {priceStatsRows.map((row) => (
+                  <tr key={row.id} className="border-b border-border last:border-0">
+                    <td className="px-3 py-1.5 text-muted-foreground">{sourceLabel(row.source)}</td>
+                    <td className="px-3 py-1.5 text-foreground">{row.district}</td>
+                    <td className="px-3 py-1.5 text-muted-foreground">{row.propertyType}</td>
+                    <td className="px-3 py-1.5 text-foreground">
+                      {row.price !== null ? Math.round(row.price).toLocaleString("bg-BG") : "—"}
+                    </td>
+                    <td className="px-3 py-1.5 text-foreground">
+                      {row.pricePerSqm !== null ? Math.round(row.pricePerSqm).toLocaleString("bg-BG") : "—"}
+                    </td>
+                    <td className="px-3 py-1.5 text-muted-foreground">
+                      {new Date(row.asOfDate).toLocaleDateString("bg-BG")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
