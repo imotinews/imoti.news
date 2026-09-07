@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { runScraper } from "@/lib/scraper/run";
+import { runScraper, runScraperForSource } from "@/lib/scraper/run";
 
 export async function runScraperNow() {
   const session = await auth();
@@ -37,4 +37,28 @@ export async function runScraperNow() {
 
 export async function getLatestScrapeRun() {
   return prisma.scrapeRun.findFirst({ orderBy: { startedAt: "desc" } });
+}
+
+// Independent of the scheduled/full run -- doesn't skip this source from
+// future full runs, since URL-level dedup already prevents re-creating
+// anything a full run would later see again for the same source.
+export async function runSourceScrapeNow(sourceId: string) {
+  const session = await auth();
+  if (!session) {
+    throw new Error("Не сте влезли в системата.");
+  }
+
+  const source = await prisma.source.findUniqueOrThrow({ where: { id: sourceId } });
+  const run = await prisma.scrapeRun.create({
+    data: { totalSources: 1, currentSourceName: source.name, sourceId: source.id },
+  });
+
+  after(async () => {
+    await runScraperForSource(sourceId, run.id);
+    revalidatePath("/admin/sources");
+    revalidatePath("/admin/articles");
+    revalidatePath("/admin", "layout");
+  });
+
+  revalidatePath("/admin/sources");
 }

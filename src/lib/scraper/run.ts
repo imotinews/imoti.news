@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type Source } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { generateUniqueSlug } from "@/lib/article-helpers";
 import { fetchRssItems } from "./rss";
@@ -38,6 +38,182 @@ async function touchRun(runId: string | undefined, data: Record<string, unknown>
   await prisma.scrapeRun.update({ where: { id: runId }, data }).catch(() => {});
 }
 
+async function getRecentTitles(): Promise<string[]> {
+  const windowStart = new Date(Date.now() - RECENT_TITLES_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const recentArticles = await prisma.article.findMany({
+    where: { createdAt: { gte: windowStart } },
+    select: { title: true },
+  });
+  return recentArticles.map((a) => a.title);
+}
+
+// Processes a single source end to end (fetch its listing/feed, extract,
+// classify+rewrite, create articles) and returns a summary. Shared by both
+// the full scheduled run (every active source) and a single-source manual
+// "check now" run -- recentTitles is threaded through by the caller so a
+// manual check still benefits from the same cross-source similarity dedup.
+async function processSource(source: Source, recentTitles: string[]): Promise<ScraperRunResult> {
+  const result: ScraperRunResult = {
+    sourceId: source.id,
+    sourceName: source.name,
+    itemsSeen: 0,
+    created: 0,
+    skippedIrrelevant: 0,
+    skippedDuplicate: 0,
+    skippedSimilar: 0,
+    skippedTooOld: 0,
+    errors: [],
+  };
+
+  try {
+    const items =
+      source.type === "rss"
+        ? await fetchRssItems(source.url, MAX_ITEMS_PER_SOURCE)
+        : await fetchListingLinks(source.url, MAX_ITEMS_PER_SOURCE);
+
+    result.itemsSeen = items.length;
+
+    for (const item of items) {
+      // Claimed pessimistically as "error" first — if anything below
+      // throws unexpectedly, the record still honestly reflects that,
+      // instead of silently looking like a normal skip.
+      let claimId: string;
+      try {
+        const claimed = await prisma.scrapedUrl.create({
+          data: {
+            url: item.url,
+            status: "error",
+            title: item.title,
+            sourceId: source.id,
+          },
+        });
+        claimId = claimed.id;
+      } catch (claimError) {
+        if (isUniqueConstraintError(claimError)) {
+          result.skippedDuplicate += 1;
+          continue;
+        }
+        throw claimError;
+      }
+
+      try {
+        if (isTooOld(item.publishedAt)) {
+          result.skippedTooOld += 1;
+          await prisma.scrapedUrl.update({
+            where: { id: claimId },
+            data: {
+              status: "too_old",
+              errorMessage: `Публикувана на ${item.publishedAt?.toISOString().slice(0, 10)}`,
+            },
+          });
+          continue;
+        }
+
+        const similarTitle = findSimilarTitle(item.title, recentTitles);
+        if (similarTitle) {
+          result.skippedSimilar += 1;
+          await prisma.scrapedUrl.update({
+            where: { id: claimId },
+            data: { status: "similar_duplicate", errorMessage: `Прилича на: ${similarTitle}` },
+          });
+          continue;
+        }
+
+        const extracted = await extractArticleText(item.url);
+        if (!extracted) {
+          const message = "Извличането на текста се провали";
+          result.errors.push(`${message}: ${item.url}`);
+          await prisma.scrapedUrl.update({
+            where: { id: claimId },
+            data: { status: "error", errorMessage: message },
+          });
+          continue;
+        }
+
+        // Listing-scraped sources (as opposed to RSS) have no date of
+        // their own -- fall back to whatever the article page's metadata
+        // says, since that's the only freshness signal we have for them.
+        if (!item.publishedAt && isTooOld(extracted.publishedAt)) {
+          result.skippedTooOld += 1;
+          await prisma.scrapedUrl.update({
+            where: { id: claimId },
+            data: {
+              status: "too_old",
+              errorMessage: `Публикувана на ${extracted.publishedAt?.toISOString().slice(0, 10)}`,
+            },
+          });
+          continue;
+        }
+
+        await sleep(AI_CALL_DELAY_MS);
+
+        const classification = await classifyAndRewrite({
+          title: extracted.title || item.title,
+          text: extracted.text,
+          sourceName: source.name,
+          contentType: source.contentType,
+        });
+
+        if (!classification.relevant) {
+          result.skippedIrrelevant += 1;
+          await prisma.scrapedUrl.update({
+            where: { id: claimId },
+            data: { status: "irrelevant" },
+          });
+          continue;
+        }
+
+        const category = classification.categorySlug
+          ? await prisma.category.findUnique({ where: { slug: classification.categorySlug } })
+          : null;
+
+        const slug = await generateUniqueSlug(classification.title);
+
+        const article = await prisma.article.create({
+          data: {
+            slug,
+            title: classification.title,
+            excerpt: classification.excerpt || null,
+            rewrittenContent: classification.content,
+            originalUrl: item.url,
+            sourceName: source.name,
+            sourceId: source.id,
+            categoryId: category?.id ?? null,
+            status: "draft",
+            aiGenerated: true,
+          },
+        });
+
+        recentTitles.push(classification.title);
+        result.created += 1;
+
+        await prisma.scrapedUrl.update({
+          where: { id: claimId },
+          data: { status: "created", articleId: article.id },
+        });
+      } catch (itemError) {
+        const message = (itemError as Error).message;
+        result.errors.push(`${item.url}: ${message}`);
+        console.error(`[scraper] item error (${item.url}):`, itemError);
+        await prisma.scrapedUrl
+          .update({ where: { id: claimId }, data: { status: "error", errorMessage: message } })
+          .catch(() => {});
+      }
+    }
+  } catch (sourceError) {
+    result.errors.push(`Грешка при извличане от източника: ${(sourceError as Error).message}`);
+    console.error(`[scraper] source error (${source.name}):`, sourceError);
+  }
+
+  // Always stamped, whether or not anything new was found -- otherwise a
+  // healthy source whose feed has no new items ever looks untouched, since
+  // the admin UI's "last attempt" used to be derived only from newly
+  // created scraped_urls rows.
+  await prisma.source.update({ where: { id: source.id }, data: { lastCheckedAt: new Date() } }).catch(() => {});
+
+  return result;
+}
+
 export async function runScraper(runId?: string): Promise<ScraperRunResult[]> {
   try {
     return await runScraperInner(runId);
@@ -53,175 +229,14 @@ async function runScraperInner(runId?: string): Promise<ScraperRunResult[]> {
 
   await touchRun(runId, { totalSources: sources.length });
 
-  const windowStart = new Date(Date.now() - RECENT_TITLES_WINDOW_DAYS * 24 * 60 * 60 * 1000);
-  const recentArticles = await prisma.article.findMany({
-    where: { createdAt: { gte: windowStart } },
-    select: { title: true },
-  });
   // Grows across the whole run (not just per source) so two sources reporting
   // the same story in the same run also get caught, not just against history.
-  const recentTitles = recentArticles.map((a) => a.title);
+  const recentTitles = await getRecentTitles();
 
   for (const source of sources) {
     await touchRun(runId, { currentSourceName: source.name });
 
-    const result: ScraperRunResult = {
-      sourceId: source.id,
-      sourceName: source.name,
-      itemsSeen: 0,
-      created: 0,
-      skippedIrrelevant: 0,
-      skippedDuplicate: 0,
-      skippedSimilar: 0,
-      skippedTooOld: 0,
-      errors: [],
-    };
-
-    try {
-      const items =
-        source.type === "rss"
-          ? await fetchRssItems(source.url, MAX_ITEMS_PER_SOURCE)
-          : await fetchListingLinks(source.url, MAX_ITEMS_PER_SOURCE);
-
-      result.itemsSeen = items.length;
-
-      for (const item of items) {
-        // Claimed pessimistically as "error" first — if anything below
-        // throws unexpectedly, the record still honestly reflects that,
-        // instead of silently looking like a normal skip.
-        let claimId: string;
-        try {
-          const claimed = await prisma.scrapedUrl.create({
-            data: {
-              url: item.url,
-              status: "error",
-              title: item.title,
-              sourceId: source.id,
-            },
-          });
-          claimId = claimed.id;
-        } catch (claimError) {
-          if (isUniqueConstraintError(claimError)) {
-            result.skippedDuplicate += 1;
-            continue;
-          }
-          throw claimError;
-        }
-
-        try {
-          if (isTooOld(item.publishedAt)) {
-            result.skippedTooOld += 1;
-            await prisma.scrapedUrl.update({
-              where: { id: claimId },
-              data: {
-                status: "too_old",
-                errorMessage: `Публикувана на ${item.publishedAt?.toISOString().slice(0, 10)}`,
-              },
-            });
-            continue;
-          }
-
-          const similarTitle = findSimilarTitle(item.title, recentTitles);
-          if (similarTitle) {
-            result.skippedSimilar += 1;
-            await prisma.scrapedUrl.update({
-              where: { id: claimId },
-              data: { status: "similar_duplicate", errorMessage: `Прилича на: ${similarTitle}` },
-            });
-            continue;
-          }
-
-          const extracted = await extractArticleText(item.url);
-          if (!extracted) {
-            const message = "Извличането на текста се провали";
-            result.errors.push(`${message}: ${item.url}`);
-            await prisma.scrapedUrl.update({
-              where: { id: claimId },
-              data: { status: "error", errorMessage: message },
-            });
-            continue;
-          }
-
-          // Listing-scraped sources (as opposed to RSS) have no date of
-          // their own -- fall back to whatever the article page's metadata
-          // says, since that's the only freshness signal we have for them.
-          if (!item.publishedAt && isTooOld(extracted.publishedAt)) {
-            result.skippedTooOld += 1;
-            await prisma.scrapedUrl.update({
-              where: { id: claimId },
-              data: {
-                status: "too_old",
-                errorMessage: `Публикувана на ${extracted.publishedAt?.toISOString().slice(0, 10)}`,
-              },
-            });
-            continue;
-          }
-
-          await sleep(AI_CALL_DELAY_MS);
-
-          const classification = await classifyAndRewrite({
-            title: extracted.title || item.title,
-            text: extracted.text,
-            sourceName: source.name,
-            contentType: source.contentType,
-          });
-
-          if (!classification.relevant) {
-            result.skippedIrrelevant += 1;
-            await prisma.scrapedUrl.update({
-              where: { id: claimId },
-              data: { status: "irrelevant" },
-            });
-            continue;
-          }
-
-          const category = classification.categorySlug
-            ? await prisma.category.findUnique({ where: { slug: classification.categorySlug } })
-            : null;
-
-          const slug = await generateUniqueSlug(classification.title);
-
-          const article = await prisma.article.create({
-            data: {
-              slug,
-              title: classification.title,
-              excerpt: classification.excerpt || null,
-              rewrittenContent: classification.content,
-              originalUrl: item.url,
-              sourceName: source.name,
-              sourceId: source.id,
-              categoryId: category?.id ?? null,
-              status: "draft",
-              aiGenerated: true,
-            },
-          });
-
-          recentTitles.push(classification.title);
-          result.created += 1;
-
-          await prisma.scrapedUrl.update({
-            where: { id: claimId },
-            data: { status: "created", articleId: article.id },
-          });
-        } catch (itemError) {
-          const message = (itemError as Error).message;
-          result.errors.push(`${item.url}: ${message}`);
-          console.error(`[scraper] item error (${item.url}):`, itemError);
-          await prisma.scrapedUrl
-            .update({ where: { id: claimId }, data: { status: "error", errorMessage: message } })
-            .catch(() => {});
-        }
-      }
-    } catch (sourceError) {
-      result.errors.push(`Грешка при извличане от източника: ${(sourceError as Error).message}`);
-      console.error(`[scraper] source error (${source.name}):`, sourceError);
-    }
-
-    // Always stamped, whether or not anything new was found -- otherwise a
-    // healthy source whose feed has no new items ever looks untouched, since
-    // the admin UI's "last attempt" used to be derived only from newly
-    // created scraped_urls rows.
-    await prisma.source.update({ where: { id: source.id }, data: { lastCheckedAt: new Date() } }).catch(() => {});
+    const result = await processSource(source, recentTitles);
 
     await touchRun(runId, {
       sourcesDone: { increment: 1 },
@@ -236,4 +251,34 @@ async function runScraperInner(runId?: string): Promise<ScraperRunResult[]> {
   await touchRun(runId, { status: "completed", finishedAt: new Date(), currentSourceName: null });
 
   return results;
+}
+
+// Manual "check now" for exactly one source -- independent of the scheduled
+// full run. Doesn't skip the source from future full runs: URL-level dedup
+// (scraped_urls' unique constraint) already prevents re-creating anything
+// this run picks up, the same way it already prevents cross-run duplicates.
+export async function runScraperForSource(sourceId: string, runId?: string): Promise<ScraperRunResult> {
+  try {
+    const source = await prisma.source.findUniqueOrThrow({ where: { id: sourceId } });
+
+    await touchRun(runId, { totalSources: 1, currentSourceName: source.name });
+
+    const recentTitles = await getRecentTitles();
+    const result = await processSource(source, recentTitles);
+
+    await touchRun(runId, {
+      sourcesDone: 1,
+      itemsSeen: result.itemsSeen,
+      created: result.created,
+      errors: result.errors.length,
+      status: "completed",
+      finishedAt: new Date(),
+      currentSourceName: null,
+    });
+
+    return result;
+  } catch (error) {
+    await touchRun(runId, { status: "failed", finishedAt: new Date() });
+    throw error;
+  }
 }

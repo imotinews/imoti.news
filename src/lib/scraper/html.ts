@@ -12,6 +12,7 @@ const SKIP_PATH_PATTERNS = [
   "/search",
   "/login",
   "/register",
+  "/user/",
   "/contact",
   "/about",
   "/rss",

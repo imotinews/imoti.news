@@ -4,6 +4,7 @@ import { deleteSource } from "@/lib/actions/sources";
 import { runScraperNow } from "@/lib/actions/scraper";
 import ScrapeButton from "@/components/admin/ScrapeButton";
 import ScrapeProgressPanel from "@/components/admin/ScrapeProgressPanel";
+import SourceScrapeButton from "@/components/admin/SourceScrapeButton";
 
 const STATS_WINDOW_DAYS = 3;
 
@@ -117,12 +118,19 @@ export default async function AdminSourcesPage() {
                         {source.lastCheckedAt.toLocaleString("bg-BG")}
                       </div>
                       {lastAttempt && (
-                        <span
-                          className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[lastAttempt.status] ?? "bg-muted text-muted-foreground"}`}
-                          title={lastAttempt.errorMessage ?? undefined}
-                        >
-                          {STATUS_LABEL[lastAttempt.status] ?? lastAttempt.status}
-                        </span>
+                        <>
+                          <span
+                            className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[lastAttempt.status] ?? "bg-muted text-muted-foreground"}`}
+                            title={lastAttempt.errorMessage ?? undefined}
+                          >
+                            {STATUS_LABEL[lastAttempt.status] ?? lastAttempt.status}
+                          </span>
+                          {lastAttempt.errorMessage && (
+                            <div className="mt-1 max-w-xs text-xs text-red-700">
+                              {lastAttempt.errorMessage}
+                            </div>
+                          )}
+                        </>
                       )}
                       <div className="mt-1 text-xs text-muted-foreground">
                         последни {STATS_WINDOW_DAYS} дни: {stats.created ?? 0} нови, {stats.error ?? 0} грешки,{" "}
@@ -146,6 +154,7 @@ export default async function AdminSourcesPage() {
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-3">
+                    <SourceScrapeButton sourceId={source.id} />
                     <Link
                       href={`/admin/sources/${source.id}/edit`}
                       className="text-primary hover:underline"

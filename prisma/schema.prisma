@@ -112,6 +112,10 @@ model ScrapeRun {
   itemsSeen         Int             @default(0) @map("items_seen")
   created           Int             @default(0)
   errors            Int             @default(0)
+  // Set only for a single-source "check now" run (as opposed to the full
+  // scheduled scrape across every source) -- plain scalar, no relation,
+  // just enough to scope the progress panel to one source.
+  sourceId          String?         @map("source_id")
 
   @@map("scrape_runs")
 }
