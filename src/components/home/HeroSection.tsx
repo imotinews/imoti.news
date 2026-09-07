@@ -13,7 +13,7 @@ export default function HeroSection({
   return (
     <section className="py-6">
       <Container>
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,0.85fr)]">
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,0.85fr)]">
           <div className="flex flex-col justify-center">
             {lead.category && (
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -45,7 +45,7 @@ export default function HeroSection({
           </div>
 
           <Link href={`/statia/${lead.slug}`} className="block overflow-hidden rounded-lg">
-            <div className="relative aspect-[4/3] w-full lg:aspect-auto lg:h-full">
+            <div className="relative aspect-[4/3] w-full">
               <ArticleImage src={lead.imageUrl} alt={lead.title} sizes="(min-width: 1024px) 45vw, 100vw" />
             </div>
           </Link>
