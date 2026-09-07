@@ -33,7 +33,7 @@ export default async function Home() {
   const featured = rest.filter((article) => article.isFeatured);
   const gridSource = (featured.length > 0 ? featured : rest).slice(0, 4);
   const gridSlugs = new Set(gridSource.map((article) => article.slug));
-  const sideSource = rest.filter((article) => !gridSlugs.has(article.slug)).slice(0, 3);
+  const sideSource = rest.filter((article) => !gridSlugs.has(article.slug)).slice(0, 4);
 
   const toCardData = (article: (typeof latest)[number]): ArticleCardData => ({
     ...article,

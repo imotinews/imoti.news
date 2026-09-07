@@ -54,12 +54,12 @@ export default async function Header() {
           </div>
         </div>
 
-        <nav className="hidden flex-wrap items-center gap-x-5 gap-y-2 pb-4 md:flex">
+        <nav className="no-scrollbar hidden items-center gap-x-5 overflow-x-auto pb-4 md:flex">
           {categories.map((category) => (
             <Link
               key={category.slug}
               href={`/kategoriya/${category.slug}`}
-              className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-foreground/80 transition-colors hover:text-primary"
+              className="shrink-0 whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-foreground/80 transition-colors hover:text-primary"
             >
               {category.name}
             </Link>

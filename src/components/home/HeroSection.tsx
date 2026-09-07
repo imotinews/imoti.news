@@ -11,9 +11,9 @@ export default function HeroSection({
   sideArticles: ArticleCardData[];
 }) {
   return (
-    <section className="py-8">
+    <section className="py-6">
       <Container>
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,0.75fr)]">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,0.85fr)]">
           <div className="flex flex-col justify-center">
             {lead.category && (
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -21,12 +21,14 @@ export default function HeroSection({
               </span>
             )}
             <Link href={`/statia/${lead.slug}`} className="group">
-              <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight text-foreground transition-colors group-hover:text-primary sm:text-4xl">
+              <h1 className="mt-3 line-clamp-3 text-3xl font-bold leading-tight tracking-tight text-foreground transition-colors group-hover:text-primary sm:text-4xl">
                 {lead.title}
               </h1>
             </Link>
             {lead.excerpt && (
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{lead.excerpt}</p>
+              <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+                {lead.excerpt}
+              </p>
             )}
             <Link
               href={`/statia/${lead.slug}`}
@@ -53,7 +55,7 @@ export default function HeroSection({
               <Link
                 key={article.slug}
                 href={`/statia/${article.slug}`}
-                className="group flex items-start justify-between gap-4 py-4 first:pt-0 last:pb-0"
+                className="group flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0"
               >
                 <div className="min-w-0">
                   {article.category && (
@@ -61,15 +63,15 @@ export default function HeroSection({
                       {article.category.name}
                     </span>
                   )}
-                  <h3 className="mt-1.5 text-sm font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
+                  <h3 className="mt-1.5 line-clamp-2 text-sm font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
                     {article.title}
                   </h3>
                   <span className="mt-1.5 block text-xs text-muted-foreground">
                     {article.readMinutes} min read
                   </span>
                 </div>
-                <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
-                  <ArticleImage src={article.imageUrl} alt={article.title} sizes="64px" />
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md">
+                  <ArticleImage src={article.imageUrl} alt={article.title} sizes="56px" />
                 </div>
               </Link>
             ))}
