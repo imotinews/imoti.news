@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { runPriceStatsScrapeNow, sourceLabel } from "@/lib/actions/price-stats";
+import { runPriceStatsScrapeNow } from "@/lib/actions/price-stats";
+import { sourceLabel } from "@/lib/price-stats/labels";
 import type { PriceStatsSourceResult } from "@/lib/price-stats/run";
 
 type State = { status: "idle" | "done"; results: PriceStatsSourceResult[] };

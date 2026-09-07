@@ -5,7 +5,8 @@ import {
   removeMarketWatchImage,
   type MarketWatchStat,
 } from "@/lib/actions/market-watch";
-import { getPriceStatsSummary, getLatestMarketPriceStats, sourceLabel } from "@/lib/actions/price-stats";
+import { getPriceStatsSummary, getLatestMarketPriceStats } from "@/lib/actions/price-stats";
+import { sourceLabel } from "@/lib/price-stats/labels";
 import BlobUploadInput from "@/components/admin/BlobUploadInput";
 import PriceStatsScrapeButton from "@/components/admin/PriceStatsScrapeButton";
 
