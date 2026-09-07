@@ -11,9 +11,11 @@ import type { ArticleCardData } from "@/components/articles/ArticleCard";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [latest, worldArticles] = await Promise.all([
+  const [latest, worldArticles, investmentArticles, designArticles] = await Promise.all([
     getLatestPublished(12),
     getPublishedByCategorySlug("mezhdunarodni-pazari"),
+    getPublishedByCategorySlug("investitsii"),
+    getPublishedByCategorySlug("saveti-dizain"),
   ]);
 
   if (latest.length === 0) {
@@ -44,6 +46,8 @@ export default async function Home() {
   const sideArticles = sideSource.map(toCardData);
   const gridArticles = gridSource.map(toCardData);
   const worldCards = worldArticles.slice(0, 8).map(toCardData);
+  const investmentCards = investmentArticles.slice(0, 4).map(toCardData);
+  const designCards = designArticles.slice(0, 4).map(toCardData);
 
   return (
     <>
@@ -55,6 +59,10 @@ export default async function Home() {
         <ArticleGrid title="Днес в имотите" viewAllHref="/kategoriya/pazar-na-imoti" articles={gridArticles} />
       )}
 
+      {investmentCards.length > 0 && (
+        <ArticleGrid title="Инвестиции" viewAllHref="/kategoriya/investitsii" articles={investmentCards} />
+      )}
+
       {worldCards.length > 0 && (
         <ArticleGrid
           title="From around the world"
@@ -62,6 +70,10 @@ export default async function Home() {
           articles={worldCards}
           showPagination
         />
+      )}
+
+      {designCards.length > 0 && (
+        <ArticleGrid title="Съвети и дизайн" viewAllHref="/kategoriya/saveti-dizain" articles={designCards} />
       )}
 
       <OriginalsSection />
