@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Container from "@/components/layout/Container";
-import ArticleCard from "@/components/articles/ArticleCard";
+import ArticleListRow from "@/components/articles/ArticleListRow";
 import AdSlotContainer from "@/components/ads/AdSlotContainer";
 import { prisma } from "@/lib/prisma";
 import { getPublishedByCategorySlug } from "@/lib/queries";
@@ -61,11 +61,12 @@ export default async function CategoryPage({
             Все още няма новини в тази категория.
           </p>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="divide-y divide-border">
             {articles.map((article) => (
-              <ArticleCard
+              <ArticleListRow
                 key={article.id}
                 article={{ ...article, readMinutes: estimateReadMinutes(article.rewrittenContent) }}
+                showCategory={false}
               />
             ))}
           </div>

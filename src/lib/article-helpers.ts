@@ -13,6 +13,15 @@ export function estimateReadMinutes(content: string): number {
   return Math.max(1, Math.round(wordCount / WORDS_PER_MINUTE));
 }
 
+export function formatArticleDate(date: Date | null): string {
+  if (!date) return "";
+  return new Date(date).toLocaleDateString("bg-BG", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 export async function generateUniqueSlug(title: string): Promise<string> {
   const base = slugify(title) || "novina";
   let candidate = base;
