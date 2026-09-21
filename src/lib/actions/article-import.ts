@@ -73,7 +73,10 @@ export async function importArticleFromUrl(
 
   let extracted;
   try {
-    extracted = await extractArticleText(href, { minLength: MANUAL_MIN_TEXT_LENGTH });
+    extracted = await extractArticleText(href, {
+      minLength: MANUAL_MIN_TEXT_LENGTH,
+      browserFallback: true,
+    });
   } catch (error) {
     return {
       error: `Страницата не може да бъде отворена (${(error as Error).message}). Провери линка или опитай пак.`,
