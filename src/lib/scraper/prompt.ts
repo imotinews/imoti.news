@@ -43,6 +43,22 @@ export const LIFESTYLE_SYSTEM_PROMPT = `Ти си редактор в imoti.news
 
 Върни резултата структурирано: ново заглавие, кратко резюме и основен текст (без блок "Източник"). Категорията почти винаги е "saveti-dizain", освен ако текстът явно не пасва по-добре на друга категория от списъка.`;
 
+// Appended when the admin hand-picks one specific link ("Нова новина" ->
+// import from a link). The normal relevance gate is exactly what rejects
+// event announcements and promo-style pages -- the very things added by hand
+// -- so it is overridden here.
+const MANUAL_IMPORT_ADDENDUM = `РЪЧЕН ВНОС — ПРИОРИТЕТ НАД СТЪПКА 1: Администраторът на изданието е избрал тази страница ръчно, за да бъде публикувана. НЕ преценявай релевантност: върни relevant=true и направи преразказ. Върни relevant=false САМО ако в текста няма никакво смислено съдържание за преразказване (например само меню, съобщение за грешка или празна страница).
+
+Много от тези страници са съобщения за събития, изложения, конференции, форуми, презентации, откривания или рекламни анонси. Преразкажи ги като кратка информативна новина без рекламен език (без призиви за покупка, без суперлативи от рода на "най-добрият"), като пазиш фактите — какво, кога, къде, кой организира. За такива материали използвай категория "sabitiya", освен ако текстът явно пасва по-добре на друга категория от списъка. Не измисляй дати, цени, имена или други факти, които не са в текста.`;
+
+export function buildSystemPrompt(input: {
+  contentType?: "real_estate" | "lifestyle";
+  manual?: boolean;
+}): string {
+  const base = input.contentType === "lifestyle" ? LIFESTYLE_SYSTEM_PROMPT : SYSTEM_PROMPT;
+  return input.manual ? `${base}\n\n${MANUAL_IMPORT_ADDENDUM}` : base;
+}
+
 export function buildUserPrompt(input: { title: string; text: string; sourceName: string }): string {
   return `Източник: ${input.sourceName}\n\nЗаглавие: ${input.title}\n\nТекст:\n${input.text.slice(0, 8000)}`;
 }

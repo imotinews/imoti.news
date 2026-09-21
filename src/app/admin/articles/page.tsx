@@ -1,20 +1,72 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { deleteArticle, publishArticle, unpublishArticle } from "@/lib/actions/articles";
+import ArticleFilters from "@/components/admin/ArticleFilters";
+
+// Sentinel for "articles with no category at all" in the ?category= filter.
+const NO_CATEGORY = "none";
+
+function listHref(params: { status?: string; category?: string; source?: string }) {
+  const qs = new URLSearchParams();
+  if (params.status) qs.set("status", params.status);
+  if (params.category) qs.set("category", params.category);
+  if (params.source) qs.set("source", params.source);
+  const str = qs.toString();
+  return str ? `/admin/articles?${str}` : "/admin/articles";
+}
 
 export default async function AdminArticlesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; category?: string; source?: string }>;
 }) {
-  const { status } = await searchParams;
+  const { status, category, source } = await searchParams;
   const validStatus = status === "draft" || status === "published" ? status : undefined;
 
-  const articles = await prisma.article.findMany({
-    where: validStatus ? { status: validStatus } : undefined,
-    include: { category: true },
-    orderBy: { createdAt: "desc" },
-  });
+  const [articles, categories, categoryCounts, sourceCounts] = await Promise.all([
+    prisma.article.findMany({
+      where: {
+        ...(validStatus ? { status: validStatus } : {}),
+        ...(category === NO_CATEGORY
+          ? { categoryId: null }
+          : category
+            ? { category: { slug: category } }
+            : {}),
+        ...(source ? { sourceName: source } : {}),
+      },
+      include: { category: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.category.findMany({ orderBy: { name: "asc" } }),
+    // Counts follow the status tab only (not the other filters), so each
+    // dropdown entry shows how many articles picking it would give.
+    prisma.article.groupBy({
+      by: ["categoryId"],
+      where: validStatus ? { status: validStatus } : undefined,
+      _count: { _all: true },
+    }),
+    prisma.article.groupBy({
+      by: ["sourceName"],
+      where: validStatus ? { status: validStatus } : undefined,
+      _count: { _all: true },
+      orderBy: { sourceName: "asc" },
+    }),
+  ]);
+
+  const countByCategoryId = new Map(categoryCounts.map((c) => [c.categoryId, c._count._all]));
+  const categoryOptions = [
+    ...categories.map((c) => ({
+      value: c.slug,
+      label: `${c.name} (${countByCategoryId.get(c.id) ?? 0})`,
+    })),
+    { value: NO_CATEGORY, label: `Без категория (${countByCategoryId.get(null) ?? 0})` },
+  ];
+  const sourceOptions = sourceCounts.map((s) => ({
+    value: s.sourceName,
+    label: `${s.sourceName} (${s._count._all})`,
+  }));
+
+  const tabClass = (active: boolean) => (active ? "font-semibold text-primary" : "text-muted-foreground");
 
   return (
     <div>
@@ -29,27 +81,31 @@ export default async function AdminArticlesPage({
       </div>
 
       <div className="mt-4 flex gap-2 text-sm">
-        <Link
-          href="/admin/articles"
-          className={!validStatus ? "font-semibold text-primary" : "text-muted-foreground"}
-        >
+        <Link href={listHref({ category, source })} className={tabClass(!validStatus)}>
           Всички
         </Link>
-        <Link
-          href="/admin/articles?status=draft"
-          className={validStatus === "draft" ? "font-semibold text-primary" : "text-muted-foreground"}
-        >
+        <Link href={listHref({ status: "draft", category, source })} className={tabClass(validStatus === "draft")}>
           Чернови
         </Link>
         <Link
-          href="/admin/articles?status=published"
-          className={validStatus === "published" ? "font-semibold text-primary" : "text-muted-foreground"}
+          href={listHref({ status: "published", category, source })}
+          className={tabClass(validStatus === "published")}
         >
           Публикувани
         </Link>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-lg border border-border bg-background">
+      <ArticleFilters
+        status={validStatus}
+        category={category}
+        source={source}
+        categoryOptions={categoryOptions}
+        sourceOptions={sourceOptions}
+      />
+
+      <p className="mt-3 text-xs text-muted-foreground">Показани: {articles.length}</p>
+
+      <div className="mt-2 overflow-x-auto rounded-lg border border-border bg-background">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-border text-muted-foreground">
             <tr>

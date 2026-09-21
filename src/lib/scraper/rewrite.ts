@@ -8,6 +8,8 @@ export async function classifyAndRewrite(input: {
   text: string;
   sourceName: string;
   contentType?: "real_estate" | "lifestyle";
+  // Admin picked this exact link by hand -- skip the relevance gate.
+  manual?: boolean;
 }): Promise<ClassifyResult> {
   const provider = process.env.AI_PROVIDER || "anthropic";
   const categorySlugs = await getScrapableCategorySlugs();

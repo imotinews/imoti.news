@@ -5,7 +5,15 @@ import type { ExtractedArticle } from "./types";
 
 const USER_AGENT = "imoti.news scraper (+https://imoti.news)";
 
-export async function extractArticleText(pageUrl: string): Promise<ExtractedArticle | null> {
+// Short event/promo announcements are legitimately brief, so the hand-import
+// path passes a lower minimum than the automatic scraper's 200 characters.
+const DEFAULT_MIN_TEXT_LENGTH = 200;
+
+export async function extractArticleText(
+  pageUrl: string,
+  options: { minLength?: number } = {}
+): Promise<ExtractedArticle | null> {
+  const minLength = options.minLength ?? DEFAULT_MIN_TEXT_LENGTH;
   const response = await fetchWithTimeout(pageUrl, {
     headers: { "User-Agent": USER_AGENT },
   });
@@ -24,7 +32,7 @@ export async function extractArticleText(pageUrl: string): Promise<ExtractedArti
   }
 
   const text = parsed.textContent.replace(/\n{3,}/g, "\n\n").trim();
-  if (text.length < 200) {
+  if (text.length < minLength) {
     return null;
   }
 
