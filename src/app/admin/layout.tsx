@@ -68,6 +68,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
           <div className="flex items-center gap-4">
             <span className="text-xs text-muted-foreground">{session.user?.email}</span>
+            <Link href="/admin/parola" className="text-sm text-muted-foreground hover:text-primary">
+              Парола
+            </Link>
             <form
               action={async () => {
                 "use server";

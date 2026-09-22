@@ -13,11 +13,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Парола", type: "password" },
       },
       authorize: async (credentials) => {
-        const email = credentials?.email as string | undefined;
+        // Phones capitalise the first letter and autofill adds stray spaces --
+        // match the address without caring about either.
+        const email = (credentials?.email as string | undefined)?.trim();
         const password = credentials?.password as string | undefined;
         if (!email || !password) return null;
 
-        const admin = await prisma.adminUser.findUnique({ where: { email } });
+        const admin = await prisma.adminUser.findFirst({
+          where: { email: { equals: email, mode: "insensitive" } },
+        });
         if (!admin) return null;
 
         const valid = await bcrypt.compare(password, admin.passwordHash);
