@@ -3,8 +3,28 @@ import Container from "./Container";
 import MobileMenu from "./MobileMenu";
 import { prisma } from "@/lib/prisma";
 
+const CATEGORY_NAV_ORDER = [
+  "pazar-na-imoti",
+  "stroitelstvo",
+  "ipoteki-finansirane",
+  "regulatsii-zakoni",
+  "investitsii",
+  "mezhdunarodni-pazari",
+  "saveti-dizain",
+  "galerii",
+];
+
 export default async function Header() {
-  const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
+  const categories = (await prisma.category.findMany({ orderBy: { name: "asc" } })).sort(
+    (a, b) => {
+      const ai = CATEGORY_NAV_ORDER.indexOf(a.slug);
+      const bi = CATEGORY_NAV_ORDER.indexOf(b.slug);
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    }
+  );
 
   return (
     <>

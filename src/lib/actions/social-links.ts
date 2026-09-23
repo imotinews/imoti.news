@@ -16,6 +16,8 @@ const PLATFORMS = [
   "viber",
 ] as const;
 
+const SINGLETON_ID = "singleton";
+
 async function requireAdmin() {
   const session = await auth();
   if (!session) {
@@ -24,15 +26,15 @@ async function requireAdmin() {
 }
 
 export async function getSocialLinks() {
-  const existing = await prisma.socialLinks.findFirst();
-  if (existing) return existing;
-  return prisma.socialLinks.create({ data: {} });
+  return prisma.socialLinks.upsert({
+    where: { id: SINGLETON_ID },
+    update: {},
+    create: { id: SINGLETON_ID },
+  });
 }
 
 export async function updateSocialLinks(formData: FormData) {
   await requireAdmin();
-
-  const current = await getSocialLinks();
 
   const data: Record<string, string | null> = {};
   for (const platform of PLATFORMS) {
@@ -40,7 +42,11 @@ export async function updateSocialLinks(formData: FormData) {
     data[platform] = value || null;
   }
 
-  await prisma.socialLinks.update({ where: { id: current.id }, data });
+  await prisma.socialLinks.upsert({
+    where: { id: SINGLETON_ID },
+    update: data,
+    create: { id: SINGLETON_ID, ...data },
+  });
 
   revalidatePath("/admin/stranitsi/sotsialni-mrezhi");
   revalidatePath("/");
