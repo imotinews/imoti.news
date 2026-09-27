@@ -88,15 +88,20 @@ model SocialLinks {
 }
 
 model Source {
-  id            String            @id @default(cuid())
-  name          String
-  url           String
-  type          SourceType
-  contentType   SourceContentType @default(real_estate) @map("content_type")
-  active        Boolean           @default(true)
-  lastCheckedAt DateTime?         @map("last_checked_at")
-  articles      Article[]
-  scrapedUrls   ScrapedUrl[]
+  id     String @id @default(cuid())
+  name   String
+  url    String
+  type   SourceType
+  // Pins every article from this source to one category regardless of what
+  // the AI classifier would otherwise pick -- used for foreign-language
+  // sources that must always land under "International markets", not
+  // whichever category the content happens to resemble.
+  forceCategorySlug String?           @map("force_category_slug")
+  contentType       SourceContentType @default(real_estate) @map("content_type")
+  active            Boolean           @default(true)
+  lastCheckedAt     DateTime?         @map("last_checked_at")
+  articles          Article[]
+  scrapedUrls       ScrapedUrl[]
 
   @@map("sources")
 }

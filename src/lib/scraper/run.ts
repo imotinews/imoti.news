@@ -163,8 +163,9 @@ async function processSource(source: Source, recentTitles: string[]): Promise<Sc
           continue;
         }
 
-        const category = classification.categorySlug
-          ? await prisma.category.findUnique({ where: { slug: classification.categorySlug } })
+        const categorySlug = source.forceCategorySlug ?? classification.categorySlug;
+        const category = categorySlug
+          ? await prisma.category.findUnique({ where: { slug: categorySlug } })
           : null;
 
         const slug = await generateUniqueSlug(classification.title);
