@@ -2,6 +2,7 @@ import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import { fetchWithTimeout } from "./fetch-with-timeout";
 import { robotsAllows } from "./robots";
+import { extractWithAI } from "./ai-extract";
 import type { ExtractedArticle } from "./types";
 
 const USER_AGENT = "imoti.news scraper (+https://imoti.news)";
@@ -40,19 +41,29 @@ export async function extractArticleText(
   const reader = new Readability(dom.window.document);
   const parsed = reader.parse();
 
-  if (!parsed?.textContent) {
-    return null;
+  let title = parsed?.title?.trim() || "";
+  let text = parsed?.textContent ? parsed.textContent.replace(/\n{3,}/g, "\n\n").trim() : "";
+
+  // Readability's heuristics rely on the page having reasonably standard
+  // article markup -- some real, legitimate pages (old table-based layouts,
+  // short photo-heavy blog posts) fall through with too little text. Try
+  // once with an AI reader before giving up on the page entirely.
+  if (text.length < minLength) {
+    const aiExtracted = await extractWithAI(html).catch(() => null);
+    if (aiExtracted && aiExtracted.text.length >= minLength) {
+      title = aiExtracted.title || title;
+      text = aiExtracted.text;
+    }
   }
 
-  const text = parsed.textContent.replace(/\n{3,}/g, "\n\n").trim();
   if (text.length < minLength) {
     return null;
   }
 
-  const publishedAt = parsed.publishedTime ? new Date(parsed.publishedTime) : null;
+  const publishedAt = parsed?.publishedTime ? new Date(parsed.publishedTime) : null;
 
   return {
-    title: parsed.title?.trim() || "",
+    title,
     text,
     publishedAt: publishedAt && !Number.isNaN(publishedAt.getTime()) ? publishedAt : null,
   };

@@ -31,6 +31,14 @@ export default function ScrapeProgressPanel({ initialRun }: { initialRun: Scrape
   const [run, setRun] = useState(initialRun);
   const router = useRouter();
 
+  // useState(initialRun) only seeds the very first render -- a later
+  // router.refresh() (e.g. from the per-source "Провери сега" button) sends
+  // this component a fresh initialRun prop without remounting it, so without
+  // this effect the panel would keep showing the previous run forever.
+  useEffect(() => {
+    setRun(initialRun);
+  }, [initialRun]);
+
   useEffect(() => {
     if (!run || run.status !== "running") return;
 
