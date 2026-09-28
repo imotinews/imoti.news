@@ -13,6 +13,17 @@ export const getLatestPublished = cache((limit?: number) => {
   });
 });
 
+// Fetched independently of getLatestPublished's limit -- the hero article is
+// meant to stay pinned until an admin picks a new one, not fall back to
+// "just the newest article" once enough other articles are published after
+// it to push it past that limit.
+export const getHeroArticle = cache(() => {
+  return prisma.article.findFirst({
+    where: { status: "published", isHero: true },
+    include: { category: true },
+  });
+});
+
 export const getPublishedByCategorySlug = cache((categorySlug: string) => {
   return prisma.article.findMany({
     where: { status: "published", category: { slug: categorySlug } },

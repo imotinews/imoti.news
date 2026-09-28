@@ -4,15 +4,16 @@ import MarketWatch from "@/components/home/MarketWatch";
 import ArticleGrid from "@/components/home/ArticleGrid";
 import OriginalsSection from "@/components/home/OriginalsSection";
 import NewsletterBlock from "@/components/home/NewsletterBlock";
-import { getLatestPublished, getPublishedByCategorySlug } from "@/lib/queries";
+import { getLatestPublished, getHeroArticle, getPublishedByCategorySlug } from "@/lib/queries";
 import { estimateReadMinutes } from "@/lib/article-helpers";
 import type { ArticleCardData } from "@/components/articles/ArticleCard";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [latest, worldArticles, investmentArticles, designArticles] = await Promise.all([
+  const [latest, heroArticle, worldArticles, investmentArticles, designArticles] = await Promise.all([
     getLatestPublished(12),
+    getHeroArticle(),
     getPublishedByCategorySlug("mezhdunarodni-pazari"),
     getPublishedByCategorySlug("investitsii"),
     getPublishedByCategorySlug("saveti-dizain"),
@@ -28,8 +29,7 @@ export default async function Home() {
     );
   }
 
-  const heroIndex = latest.findIndex((article) => article.isHero);
-  const lead = heroIndex >= 0 ? latest[heroIndex] : latest[0];
+  const lead = heroArticle ?? latest[0];
   const rest = latest.filter((article) => article.slug !== lead.slug);
 
   const featured = rest.filter((article) => article.isFeatured);
