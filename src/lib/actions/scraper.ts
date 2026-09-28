@@ -6,11 +6,15 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { runScraper, runScraperForSource } from "@/lib/scraper/run";
+import { SITE_PAUSED } from "@/lib/site-status";
 
 export async function runScraperNow() {
   const session = await auth();
   if (!session) {
     throw new Error("Не сте влезли в системата.");
+  }
+  if (SITE_PAUSED) {
+    throw new Error("Сайтът е временно спрян — скрейпването е изключено.");
   }
 
   const totalSources = await prisma.source.count({ where: { active: true } });
@@ -63,6 +67,9 @@ export async function runSourceScrapeNow(sourceId: string) {
   const session = await auth();
   if (!session) {
     throw new Error("Не сте влезли в системата.");
+  }
+  if (SITE_PAUSED) {
+    throw new Error("Сайтът е временно спрян — скрейпването е изключено.");
   }
 
   const source = await prisma.source.findUniqueOrThrow({ where: { id: sourceId } });

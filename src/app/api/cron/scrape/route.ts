@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { runScraper } from "@/lib/scraper/run";
+import { SITE_PAUSED } from "@/lib/site-status";
 
 // Without this, the route used Vercel's low implicit default -- nowhere
 // near enough for 23 sources' worth of rate-limited AI calls -- and got
@@ -14,6 +15,10 @@ export async function GET(request: Request) {
 
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (SITE_PAUSED) {
+    return NextResponse.json({ ok: true, skipped: true, reason: "site paused" });
   }
 
   const totalSources = await prisma.source.count({ where: { active: true } });
