@@ -6,6 +6,11 @@ import ScrapeButton from "@/components/admin/ScrapeButton";
 import ScrapeProgressPanel from "@/components/admin/ScrapeProgressPanel";
 import SourceScrapeButton from "@/components/admin/SourceScrapeButton";
 
+// The "Скрейпвай сега" / "Провери сега" server actions run on this route --
+// without this they inherit Vercel's low implicit default, nowhere near
+// enough time for a full run across every source.
+export const maxDuration = 300;
+
 const STATS_WINDOW_DAYS = 3;
 
 const STATUS_LABEL: Record<string, string> = {

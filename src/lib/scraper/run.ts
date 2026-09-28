@@ -8,7 +8,11 @@ import { classifyAndRewrite } from "./rewrite";
 import { findSimilarTitle } from "./dedup";
 import type { ScraperRunResult } from "./types";
 
-const MAX_ITEMS_PER_SOURCE = 8;
+// Lowered from 8 now that the source count has roughly doubled -- at 4.5s
+// of mandatory AI-rate-limit delay per item, 23 sources x 8 items already
+// guarantees over 13 minutes of pure waiting before any fetch/AI time, well
+// past what a single serverless invocation can safely finish within.
+const MAX_ITEMS_PER_SOURCE = 5;
 const RECENT_TITLES_WINDOW_DAYS = 5;
 
 // This is a news site -- an item published months ago (some listing pages

@@ -35,8 +35,25 @@ export async function runScraperNow() {
   redirect("/admin/sources");
 }
 
+// A run killed mid-flight by Vercel's function duration limit never gets a
+// chance to mark itself "failed" -- it just sits at "running" forever, and
+// the admin progress panel would show a live spinner indefinitely. Anything
+// still "running" long after a run could plausibly finish is self-healed
+// here instead of needing manual DB surgery.
+const STALE_RUN_MINUTES = 20;
+
 export async function getLatestScrapeRun() {
-  return prisma.scrapeRun.findFirst({ orderBy: { startedAt: "desc" } });
+  const run = await prisma.scrapeRun.findFirst({ orderBy: { startedAt: "desc" } });
+  if (run && run.status === "running") {
+    const ageMinutes = (Date.now() - run.startedAt.getTime()) / 60000;
+    if (ageMinutes > STALE_RUN_MINUTES) {
+      return prisma.scrapeRun.update({
+        where: { id: run.id },
+        data: { status: "failed", finishedAt: new Date() },
+      });
+    }
+  }
+  return run;
 }
 
 // Independent of the scheduled/full run -- doesn't skip this source from

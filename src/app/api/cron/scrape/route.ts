@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { runScraper } from "@/lib/scraper/run";
 
+// Without this, the route used Vercel's low implicit default -- nowhere
+// near enough for 23 sources' worth of rate-limited AI calls -- and got
+// killed mid-run with no chance to mark itself failed.
+export const maxDuration = 300;
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
 
