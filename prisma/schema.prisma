@@ -28,6 +28,17 @@ enum ScrapeStatus {
   similar_duplicate
   too_old
   error
+  signal
+}
+
+// How a source is used. rewrite = fetch the article and write a new text
+// (only for sources whose terms allow it); card = publish the title and
+// excerpt exactly as the source's own feed provides them, with name and link;
+// signal = internal radar only, nothing is published from it.
+enum SourceMode {
+  rewrite
+  card
+  signal
 }
 
 enum AdPosition {
@@ -97,6 +108,7 @@ model Source {
   // sources that must always land under "International markets", not
   // whichever category the content happens to resemble.
   forceCategorySlug String?           @map("force_category_slug")
+  mode              SourceMode        @default(rewrite)
   contentType       SourceContentType @default(real_estate) @map("content_type")
   active            Boolean           @default(true)
   lastCheckedAt     DateTime?         @map("last_checked_at")
@@ -143,6 +155,8 @@ model Article {
   status            ArticleStatus @default(draft)
   publishedAt       DateTime?     @map("published_at")
   aiGenerated       Boolean       @default(false) @map("ai_generated")
+  isCard            Boolean       @default(false) @map("is_card")
+  sourceAuthor      String?       @map("source_author")
   isHero            Boolean       @default(false) @map("is_hero")
   isFeatured        Boolean       @default(false) @map("is_featured")
   isOriginal        Boolean       @default(false) @map("is_original")
@@ -182,6 +196,30 @@ model ScrapedUrl {
 
   @@index([sourceId, createdAt])
   @@map("scraped_urls")
+}
+
+// Editorial calendar: recurring things we know are coming (a weekly paper
+// issue, our own weekly market report, official data releases). A detector
+// checks the real source on the expected day and drafts an item only when
+// something actually appeared -- the calendar never publishes from memory.
+model PublicationSchedule {
+  id             String    @id @default(cuid())
+  name           String
+  detector       String
+  cadence        String
+  weekday        Int?
+  sourceUrl      String?   @map("source_url")
+  notes          String?
+  active         Boolean   @default(true)
+  nextExpectedAt DateTime? @map("next_expected_at")
+  lastRunAt      DateTime? @map("last_run_at")
+  lastSuccessAt  DateTime? @map("last_success_at")
+  lastStatus     String?   @map("last_status")
+  lastMessage    String?   @map("last_message")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@map("publication_schedules")
 }
 
 model SiteContent {

@@ -19,6 +19,7 @@ const STATUS_LABEL: Record<string, string> = {
   similar_duplicate: "прилича на друга",
   too_old: "твърде стара",
   error: "грешка",
+  signal: "сигнал (радар)",
 };
 
 const STATUS_CLASS: Record<string, string> = {
@@ -27,6 +28,7 @@ const STATUS_CLASS: Record<string, string> = {
   similar_duplicate: "bg-muted text-muted-foreground",
   too_old: "bg-muted text-muted-foreground",
   error: "bg-red-100 text-red-700",
+  signal: "bg-muted text-muted-foreground",
 };
 
 export default async function AdminSourcesPage() {
@@ -112,6 +114,9 @@ export default async function AdminSourcesPage() {
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
                   {source.type === "rss" ? "RSS" : "Scrape"}
+                  <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    {source.mode === "card" ? "карта" : source.mode === "signal" ? "сигнал" : "преразказ"}
+                  </span>
                   {source.contentType === "lifestyle" && (
                     <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs">lifestyle</span>
                   )}

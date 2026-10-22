@@ -82,7 +82,7 @@ export default async function ArticlePage({
       "@type": "Organization",
       name: "imoti.news",
     },
-    isBasedOn: article.originalUrl,
+    isBasedOn: article.isOriginal ? undefined : article.originalUrl,
   };
 
   return (
@@ -136,11 +136,29 @@ export default async function ArticlePage({
             </div>
           )}
 
-          <div className="mt-6 space-y-4 text-base leading-7 text-foreground">
+          {article.isCard && (
+            <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Откъс от {article.sourceName}
+              {article.sourceAuthor && article.sourceAuthor.includes(" ") ? ` · ${article.sourceAuthor}` : ""}
+            </p>
+          )}
+
+          <div className={`${article.isCard ? "mt-2" : "mt-6"} space-y-4 text-base leading-7 text-foreground`}>
             {firstHalf.map((paragraph, i) => (
               <p key={i}>{paragraph}</p>
             ))}
           </div>
+
+          {article.isCard && (
+            <a
+              href={article.originalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-6 inline-block rounded-md border border-border px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-muted"
+            >
+              Прочетете цялата статия в {article.sourceName} →
+            </a>
+          )}
 
           {secondHalf.length > 0 && (
             <>
@@ -191,17 +209,19 @@ export default async function ArticlePage({
             </div>
           )}
 
-          <div className="mt-8 rounded-md border border-border bg-muted p-4 text-sm text-muted-foreground">
-            Източник: {article.sourceName} —{" "}
-            <a
-              href={article.originalUrl}
-              target="_blank"
-              rel="noopener noreferrer nofollow"
-              className="font-medium text-primary hover:underline break-all"
-            >
-              {article.originalUrl}
-            </a>
-          </div>
+          {!article.isOriginal && !article.isCard && (
+            <div className="mt-8 rounded-md border border-border bg-muted p-4 text-sm text-muted-foreground">
+              Източник: {article.sourceName} —{" "}
+              <a
+                href={article.originalUrl}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="font-medium text-primary hover:underline break-all"
+              >
+                {article.originalUrl}
+              </a>
+            </div>
+          )}
         </article>
 
         <aside className="hidden lg:block">

@@ -29,5 +29,6 @@ export async function fetchRssItems(feedUrl: string, limit = 10): Promise<FeedIt
       title: (item.title ?? "").trim(),
       publishedAt: item.isoDate ? new Date(item.isoDate) : null,
       summary: item.contentSnippet?.trim() || item.summary?.trim() || null,
+      author: item.creator?.trim() || null,
     }));
 }

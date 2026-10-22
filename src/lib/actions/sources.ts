@@ -17,13 +17,15 @@ function readSourceFields(formData: FormData) {
   const url = String(formData.get("url") ?? "").trim();
   const type = formData.get("type") === "scrape" ? "scrape" : "rss";
   const contentType = formData.get("contentType") === "lifestyle" ? "lifestyle" : "real_estate";
+  const modeValue = formData.get("mode");
+  const mode = modeValue === "card" ? "card" : modeValue === "signal" ? "signal" : "rewrite";
   const active = formData.get("active") === "on";
 
   if (!name || !url) {
     throw new Error("Името и URL адресът са задължителни.");
   }
 
-  return { name, url, type, contentType, active } as const;
+  return { name, url, type, contentType, mode, active } as const;
 }
 
 export async function createSource(formData: FormData) {

@@ -3,6 +3,7 @@ export type SourceFormValues = {
   url: string;
   type: "rss" | "scrape";
   contentType: "real_estate" | "lifestyle";
+  mode: "rewrite" | "card" | "signal";
   active: boolean;
 };
 
@@ -71,6 +72,25 @@ export default function SourceForm({
           <option value="real_estate">Пазар на имоти (строг филтър за релевантност)</option>
           <option value="lifestyle">Съвети и дизайн (интериор, обзавеждане, дом)</option>
         </select>
+      </div>
+
+      <div>
+        <label htmlFor="mode" className="mb-1 block text-sm font-medium text-foreground">
+          Как използваме източника
+        </label>
+        <select
+          id="mode"
+          name="mode"
+          defaultValue={defaultValues?.mode ?? "signal"}
+          className="w-full max-w-md rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+        >
+          <option value="signal">Сигнал — нищо не се публикува, само радар за теми</option>
+          <option value="card">Карта — заглавие и откъс непроменени, с име и линк</option>
+          <option value="rewrite">Преразказ — само ако условията на източника го позволяват</option>
+        </select>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Картата работи само с RSS емисия. За източници без проверени условия остави „Сигнал“.
+        </p>
       </div>
 
       <label className="flex w-fit items-center gap-2 text-sm text-foreground">

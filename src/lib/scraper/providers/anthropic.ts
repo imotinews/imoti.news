@@ -17,6 +17,7 @@ export async function classifyAndRewriteWithAnthropic(
     sourceName: string;
     contentType?: "real_estate" | "lifestyle";
     manual?: boolean;
+    cardOnly?: boolean;
   },
   categorySlugs: string[]
 ): Promise<ClassifyResult> {

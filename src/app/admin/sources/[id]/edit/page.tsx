@@ -26,6 +26,7 @@ export default async function EditSourcePage({
             url: source.url,
             type: source.type,
             contentType: source.contentType,
+            mode: source.mode,
             active: source.active,
           }}
         />

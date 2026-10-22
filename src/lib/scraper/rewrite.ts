@@ -10,6 +10,8 @@ export async function classifyAndRewrite(input: {
   contentType?: "real_estate" | "lifestyle";
   // Admin picked this exact link by hand -- skip the relevance gate.
   manual?: boolean;
+  // Only judge relevance and category; the text is not rewritten.
+  cardOnly?: boolean;
 }): Promise<ClassifyResult> {
   const provider = process.env.AI_PROVIDER || "anthropic";
   const categorySlugs = await getScrapableCategorySlugs();

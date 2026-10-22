@@ -3,6 +3,7 @@ export type FeedItem = {
   title: string;
   publishedAt: Date | null;
   summary: string | null;
+  author?: string | null;
 };
 
 export type ExtractedArticle = {
