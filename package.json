@@ -26,7 +26,8 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "resend": "^6.19.0",
-    "rss-parser": "^3.13.0"
+    "rss-parser": "^3.13.0",
+    "unpdf": "^1.9.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
