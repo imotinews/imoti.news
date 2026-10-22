@@ -13,7 +13,10 @@ export async function scrapeImotBg(): Promise<RawPriceRow[]> {
   const res = await fetch(URL, { headers: { "User-Agent": USER_AGENT } });
   if (!res.ok) throw new Error(`imot.bg: HTTP ${res.status}`);
 
-  const html = await res.text();
+  // imot.bg serves windows-1251 with no charset in the HTTP header; res.text()
+  // assumes UTF-8 and silently turned every Cyrillic district name into
+  // replacement characters, so different districts collided on one key.
+  const html = new TextDecoder("windows-1251").decode(await res.arrayBuffer());
   const dom = new JSDOM(html);
   const table = dom.window.document.querySelector("table.sredni-ceni-2025") as HTMLTableElement | null;
   if (!table) throw new Error("imot.bg: price table not found (page layout may have changed)");
