@@ -5,6 +5,7 @@ import { fetchRssItems } from "./rss";
 import { fetchListingLinks } from "./html";
 import { extractArticleText } from "./extract";
 import { classifyAndRewrite } from "./rewrite";
+import { universalRewrite } from "@/lib/writing/pipeline";
 import { findSimilarTitle } from "./dedup";
 import type { ScraperRunResult } from "./types";
 
@@ -338,7 +339,7 @@ async function processSource(source: Source, recentTitles: string[]): Promise<Sc
 
         await sleep(AI_CALL_DELAY_MS);
 
-        const classification = await classifyAndRewrite({
+        const classification = await universalRewrite({
           title: extracted.title || item.title,
           text: extracted.text,
           sourceName: source.name,

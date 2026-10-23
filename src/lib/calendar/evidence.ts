@@ -205,12 +205,11 @@ export async function buildEvidencePack(): Promise<EvidencePack | null> {
   const lasts = series.map((s) => s.last);
   const gap = ((Math.max(...lasts) - Math.min(...lasts)) / Math.min(...lasts)) * 100;
 
-  const names = series.map((s) => `${s.portal} (${s.page})`).join(" и ");
-  const counts = series.map((s) => `${s.districts} при ${s.portal}`).join(", ");
+  const counts = series.map((s) => s.districts).join(" и ");
   const excluded = series.reduce((sum, s) => sum + s.excludedDistricts, 0);
   const methodology =
-    `Как го изчислихме: Средни офертни цени на двустайни апартаменти по квартали в Пловдив (евро на кв. м), от публичните страници „Средни цени“ на ${names}, седмично ${periodText} ` +
-    `Сравнени са едни и същи квартали във всички седмици (${counts}). Простата средна стойност не е претеглена по брой обяви. ` +
+    `Как го изчислихме: Средни офертни цени на двустайни апартаменти по квартали в Пловдив (евро на кв. м), от публичните страници „Средни цени“ на водещи портали за имоти, събирани веднъж седмично ${periodText} ` +
+    `Сравнени са едни и същи квартали във всички седмици (съответно ${counts} квартала по портали). Простата средна стойност не е претеглена по брой обяви. ` +
     `${excluded > 0 ? `Квартали със седмична промяна над 25% са изключени като аномалии (${excluded}). ` : ""}` +
     `Данните са само за Пловдив и само за двустайни апартаменти.`;
 

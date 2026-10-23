@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { generateUniqueSlug } from "@/lib/article-helpers";
 import { extractArticleText } from "@/lib/scraper/extract";
-import { classifyAndRewrite } from "@/lib/scraper/rewrite";
+import { universalRewrite } from "@/lib/writing/pipeline";
 
 export type ImportState = { error?: string; existingArticleId?: string };
 
@@ -91,7 +91,7 @@ export async function importArticleFromUrl(
 
   let classification;
   try {
-    classification = await classifyAndRewrite({
+    classification = await universalRewrite({
       title: extracted.title,
       text: extracted.text,
       sourceName,

@@ -120,7 +120,7 @@ export async function runMarketPulse(): Promise<HandlerResult> {
 
   return {
     status: "created",
-    message: `Чернова „${draft.title}“ (${pack.portalCount} портала, ${pack.weeks} седмици).`,
+    message: `Чернова „${draft.title}“ (${pack.portalCount} портала, ${pack.weeks} седмици). Данни от: ${pack.series.map((s) => s.portal).join(", ")}.`,
     articleId: article.id,
   };
 }

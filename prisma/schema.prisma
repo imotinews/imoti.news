@@ -157,6 +157,9 @@ model Article {
   aiGenerated       Boolean       @default(false) @map("ai_generated")
   isCard            Boolean       @default(false) @map("is_card")
   sourceAuthor      String?       @map("source_author")
+  // JSON of the title/excerpt/text this article had before it was rewritten
+  // with the universal writing pipeline, so the change can be undone.
+  legacyContent     String?       @map("legacy_content")
   isHero            Boolean       @default(false) @map("is_hero")
   isFeatured        Boolean       @default(false) @map("is_featured")
   isOriginal        Boolean       @default(false) @map("is_original")
