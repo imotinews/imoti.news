@@ -5,7 +5,7 @@ import { fetchRssItems } from "./rss";
 import { fetchListingLinks } from "./html";
 import { extractArticleText } from "./extract";
 import { classifyAndRewrite } from "./rewrite";
-import { universalRewrite } from "@/lib/writing/pipeline";
+import { buildEvidence, universalRewrite } from "@/lib/writing/pipeline";
 import { findSimilarTitle } from "./dedup";
 import type { ScraperRunResult } from "./types";
 
@@ -374,6 +374,11 @@ async function processSource(source: Source, recentTitles: string[]): Promise<Sc
             categoryId: category?.id ?? null,
             status: "draft",
             aiGenerated: true,
+            evidence: buildEvidence(classification, {
+              sourceUrl: item.url,
+              sourceName: source.name,
+              fetchedFrom: "original",
+            }),
           },
         });
 

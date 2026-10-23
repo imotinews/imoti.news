@@ -160,6 +160,9 @@ model Article {
   // JSON of the title/excerpt/text this article had before it was rewritten
   // with the universal writing pipeline, so the change can be undone.
   legacyContent     String?       @map("legacy_content")
+  // JSON record of how the text was made: source address and time, the facts
+  // it was written from, the overlap with the original and the checks passed.
+  evidence          String?
   isHero            Boolean       @default(false) @map("is_hero")
   isFeatured        Boolean       @default(false) @map("is_featured")
   isOriginal        Boolean       @default(false) @map("is_original")

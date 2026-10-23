@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { generateUniqueSlug } from "@/lib/article-helpers";
 import { extractArticleText } from "@/lib/scraper/extract";
-import { universalRewrite } from "@/lib/writing/pipeline";
+import { buildEvidence, universalRewrite } from "@/lib/writing/pipeline";
 
 export type ImportState = { error?: string; existingArticleId?: string };
 
@@ -127,6 +127,7 @@ export async function importArticleFromUrl(
       categoryId: category?.id ?? null,
       status: "draft",
       aiGenerated: true,
+      evidence: buildEvidence(classification, { sourceUrl: href, sourceName, fetchedFrom: "original" }),
     },
   });
 

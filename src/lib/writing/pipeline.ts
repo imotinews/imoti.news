@@ -19,7 +19,34 @@ const PACE_MS = process.env.AI_PROVIDER === "gemini" ? 4500 : 0;
 const MAX_ATTEMPTS = 3;
 const MAX_OVERLAP = 0.1;
 
-export type UniversalResult = ClassifyResult & { overlap?: number };
+export type UniversalResult = ClassifyResult & {
+  overlap?: number;
+  facts?: string[];
+  quote?: { text: string; by: string } | null;
+};
+
+// What gets stored next to the article so it can be shown later: the text was
+// written from these facts, not from the source's sentences.
+export function buildEvidence(
+  result: UniversalResult,
+  context: { sourceUrl: string; sourceName: string; fetchedFrom: "original" | "previous-text" }
+): string {
+  return JSON.stringify({
+    sourceName: context.sourceName,
+    sourceUrl: context.sourceUrl,
+    recordedAt: new Date().toISOString(),
+    textReadFrom: context.fetchedFrom,
+    facts: result.facts ?? [],
+    quote: result.quote ?? null,
+    overlapWithOriginal: result.overlap ?? null,
+    checks: [
+      "числата в текста са във фактите",
+      "източникът е назован в първия абзац и още веднъж",
+      "имената на места и фирми от фактите са запазени",
+      "съвпадение с оригинала под 10% (5-думови фрази, без един цитат)",
+    ],
+  });
+}
 
 type FactSheet = {
   relevant?: boolean;
@@ -201,5 +228,7 @@ export async function universalRewrite(input: {
     content: draft.paragraphs.map((p) => p.trim()).filter(Boolean).join("\n"),
     categorySlug: categorySlugs.includes(sheet.category_slug ?? "") ? (sheet.category_slug as string) : null,
     overlap,
+    facts,
+    quote,
   };
 }

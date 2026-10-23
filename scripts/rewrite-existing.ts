@@ -8,7 +8,7 @@
 //   npx tsx scripts/rewrite-existing.ts --also-stroitel  also Vestnik Stroitel
 import { prisma } from "../src/lib/prisma";
 import { extractArticleText } from "../src/lib/scraper/extract";
-import { universalRewrite } from "../src/lib/writing/pipeline";
+import { buildEvidence, universalRewrite } from "../src/lib/writing/pipeline";
 import { overlapRatio } from "../src/lib/writing/checks";
 
 const RESTRICTED_PREFIXES = ["Investor.bg", "Imoti.net", "Plovdiv24.bg", "Money.bg", "Bulgaria ON AIR"];
@@ -103,6 +103,11 @@ async function main() {
           title: result.title,
           excerpt: result.excerpt,
           rewrittenContent: result.content,
+          evidence: buildEvidence(result, {
+            sourceUrl: article.originalUrl,
+            sourceName: article.sourceName,
+            fetchedFrom: usedOriginal ? "original" : "previous-text",
+          }),
           status: "draft",
         },
       });

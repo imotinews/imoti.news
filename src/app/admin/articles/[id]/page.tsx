@@ -26,6 +26,23 @@ export default async function ArticlePreviewPage({
 
   const paragraphs = article.rewrittenContent.split("\n").filter(Boolean);
 
+  type Evidence = {
+    recordedAt?: string;
+    textReadFrom?: string;
+    facts?: string[];
+    quote?: { text: string; by: string } | null;
+    overlapWithOriginal?: number | null;
+    checks?: string[];
+  };
+  let evidence: Evidence | null = null;
+  if (article.evidence) {
+    try {
+      evidence = JSON.parse(article.evidence) as Evidence;
+    } catch {
+      evidence = null;
+    }
+  }
+
   return (
     <div>
       <Link href="/admin/articles" className="text-sm text-muted-foreground hover:text-primary">
@@ -57,6 +74,33 @@ export default async function ArticlePreviewPage({
               <p key={index}>{paragraph}</p>
             ))}
           </div>
+          {evidence && (
+            <details className="mt-8 rounded-md border border-border bg-muted p-4 text-sm">
+              <summary className="cursor-pointer font-medium text-foreground">
+                Доказателства за написването
+              </summary>
+              <div className="mt-3 space-y-3 text-muted-foreground">
+                <p>
+                  Текстът е написан от тези факти, не от изреченията на източника
+                  {evidence.textReadFrom === "previous-text" ? " (оригиналната страница не беше достъпна)" : ""}.
+                  {typeof evidence.overlapWithOriginal === "number"
+                    ? ` Съвпадение на 5-думови фрази с оригинала: ${(evidence.overlapWithOriginal * 100).toFixed(1)}%.`
+                    : ""}
+                </p>
+                <ul className="list-disc space-y-1 pl-5">
+                  {(evidence.facts ?? []).map((fact, index) => (
+                    <li key={index}>{fact}</li>
+                  ))}
+                </ul>
+                {evidence.quote && (
+                  <p>
+                    Цитат: „{evidence.quote.text}“ — {evidence.quote.by}
+                  </p>
+                )}
+                {evidence.recordedAt && <p className="text-xs">Записано: {new Date(evidence.recordedAt).toLocaleString("bg-BG")}</p>}
+              </div>
+            </details>
+          )}
         </article>
 
         <aside className="w-full shrink-0 lg:w-72">
